@@ -34,6 +34,15 @@ PADRAO: dict[str, Any] = {
     # Mapa
     "camera_alcance_m": 120,
     "fuso": "America/Sao_Paulo",
+    # Parte 3: treino e avaliação dos modelos de previsão
+    "prev_backtest_dias": 91,           # backtest de origem móvel cobre os últimos N dias
+    "prev_backtest_passo_dias": 7,      # um corte por semana
+    "prev_treino_semanas": 52,          # P1: semanas de histórico usadas no treino
+    "prev_treino_origens_dias": 270,    # P2: dias de origens usadas no treino
+    "prev_p1_taxa_dias": 365,           # baseline de P1: taxa de falha do tipo nos últimos N dias
+    "prev_p2_semanas_baseline": 8,      # baseline de P2: média da mesma hora e dia da semana em N semanas
+    "prev_p6_media_dias": 30,           # baseline de P6: última média móvel de N dias
+    "prev_horas_pico": [7, 8, 9, 17, 18, 19],  # horas de pico dos dias úteis, avaliadas à parte em P2
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}

@@ -50,3 +50,33 @@ Onde a implementação se afastou da especificação para respeitar o código da
 | Clima no modo contínuo | — | O que acontece é o clima gravado no banco, inclusive o editado pelo operador | "Amanhã chove forte" vira histórico com chuva forte, e as previsões podem ser conferidas |
 | Eventos futuros | — | Gerados para os próximos 30 dias (o modo contínuo estende), mais um grande show no Pacaembu na primeira sexta depois da data de referência | Entradas de P2 e roteiro da demonstração |
 | Gravação | — | `COPY` do psycopg para ocorrências e séries | 160 mil ocorrências e 345 mil pontos de série em cerca de 20 s |
+
+## Fase 3
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| Unidade de P1 | equipamento × dia | Equipamento × data de corte semanal (meia-noite local); alvos "falha nos próximos 7 dias" e "nos próximos 30 dias" | Diário daria 7 vezes mais linhas quase iguais; semanal treina em segundos e tem o mesmo poder (decidido na Fase 0) |
+| Unidade de P2 | região × hora | Bairro × hora (28 bairros), somado por região na avaliação | Aprovado na Fase 0 |
+| "Ocorrências nas últimas 1/24/168 h" | relativo à hora prevista | Relativo à **origem** da previsão (o momento em que ela é feita) | Para prever até 72 h à frente, as horas imediatamente anteriores à hora prevista ainda não aconteceram. Usar a hora prevista seria vazamento |
+| Linhas de treino de P2 | — | Uma origem por dia (meia-noite), 72 horas previstas por origem; a mesma hora aparece com horizontes diferentes | O modelo aprende quanto a informação recente vale para cada horizonte |
+| Previsão do tempo no histórico | — | Para dias passados, a "previsão" é o tempo que fez (previsão perfeita) | O histórico sintético não guarda previsões antigas. Na operação, as horas futuras vêm da previsão editável |
+| Eventos, escala e calendário futuros | — | Usados como variáveis da hora prevista | São informação conhecida com antecedência, não vazamento |
+| Variáveis de equipamento ausentes | silêncios recentes, tendência das métricas, score de saúde | Não usadas | As Partes 1 e 2 só guardam o valor atual (último sinal, métricas e score de agora). Usar o valor de hoje para um corte no passado seria vazamento |
+| Furtos próximos | — | Furtos no mesmo bairro nos 90 dias antes do corte | Simples e sem vazamento |
+| Tipo de equipamento no baseline de P1 | taxa histórica do tipo | Falhas do tipo nos 365 dias antes do corte ÷ (equipamentos em serviço × 365); probabilidade em N dias = 1 − (1 − taxa)^N | Janela e horizonte configuráveis |
+| Horas de pico em P2 | — | 7 h, 8 h, 9 h, 17 h, 18 h e 19 h dos dias úteis | Mesmas faixas dos picos da Parte 2 |
+| Métrica principal de P2 | MAE por região | MAE por **região e hora** (bairros somados); MAE por bairro guardado também | O gestor decide por região |
+| Configuração | — | Parâmetros `prev_*` no mesmo mecanismo de limites da Parte 2 (`config_motor`, `PUT /central/configuracao`) | Nada fixo no código |
+| Comando de treino | `python -m preditivo.treinar --todos` | `python -m app.preditivo.treinar --todos` (ou `--baselines`) | O pacote fica dentro de `app/` |
+| Disponibilidade diária (base de P6) | — | Reconstruída do histórico de situação: operacionais ÷ em serviço (operacional, mau funcionamento, em manutenção, furtado) à meia-noite, por região | Não existe série histórica de disponibilidade nas Partes 1 e 2 |
+
+### Baselines no backtest (banco de demonstração, semente 42, referência 25/10/2026)
+
+Backtest de origem móvel nos últimos 91 dias, um corte por semana.
+
+| Módulo | Baseline | Resultado |
+|---|---|---|
+| P1, 7 dias | Taxa de falha do tipo | AUC 0,597; Brier 0,0264; precisão nos 50 primeiros 3,8% (taxa base 2,7%) |
+| P1, 30 dias | Taxa de falha do tipo | AUC 0,597; Brier 0,0961; precisão nos 50 primeiros 15,8% (taxa base 10,9%) |
+| P2 | Média da mesma hora e dia da semana em 8 semanas | MAE por região e hora 1,29 (média real 2,50 ocorrências), erro 51,8%; no pico, MAE 1,89 |
+| P6, 30 dias | Última média móvel de 30 dias | Erro médio de 0,53 ponto percentual |

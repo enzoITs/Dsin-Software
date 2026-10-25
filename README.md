@@ -61,6 +61,7 @@ Plano e andamento: [docs/parte3/00-reconhecimento.md](docs/parte3/00-reconhecime
 ```bash
 podman compose exec api python -m scripts.verificar_padroes        # confere cada padrão com consultas diretas
 podman compose exec api python -m scripts.gerar_historico --forcar # refaz o histórico da cidade (mesmos dados)
+podman compose exec api python -m app.preditivo.treinar --todos   # avalia baselines (e modelos) no backtest de 90 dias
 ```
 
 Mesma semente e mesma data de referência geram os mesmos dados. Depois da subida, o `simulador` continua a história no modo contínuo: a cada 5 minutos gera as ocorrências das horas que passaram, com os mesmos padrões e o clima gravado no banco (inclusive o editado pelo operador), e uma vez por hora aplica pela API falhas, furtos e consertos sorteados pelos mesmos padrões.
@@ -249,6 +250,6 @@ Estrutura:
 - `backend/app/preditivo`: Parte 3 (calendário, clima, padrões plantados, geradores, modo contínuo).
 - `frontend/src/pages/Central.tsx` e `frontend/src/central/`: a tela da central (mapa, painéis, WebSocket).
 
-Testes: 138 no backend (73 da Parte 1, 39 da Parte 2, 26 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador e cada padrão plantado conferido por consulta) e 13 no frontend.
+Testes: 145 no backend (73 da Parte 1, 39 da Parte 2, 33 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento e baselines) e 13 no frontend.
 
 Como a IA foi usada no desenvolvimento e nos recursos do sistema: [docs/uso-de-ia.md](docs/uso-de-ia.md).

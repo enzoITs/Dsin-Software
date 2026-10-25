@@ -1,6 +1,8 @@
 """Testes rodam num banco separado (atalaia_test) no mesmo Postgres do compose."""
 
 import os
+import subprocess
+import sys
 
 BASE = os.environ.get("DATABASE_URL", "postgresql+psycopg://atalaia:atalaia@localhost:5433/atalaia")
 TEST_URL = BASE.rsplit("/", 1)[0] + "/atalaia_test"
@@ -104,3 +106,32 @@ def radar(client):
         return r.json()
 
     return criar
+
+
+RAIZ = os.path.join(os.path.dirname(__file__), "..")
+
+
+@pytest.fixture(scope="session")
+def banco_gerado(banco):
+    url = BASE.rsplit("/", 1)[0] + "/atalaia_test_gerador"
+    admin = create_engine(BASE, isolation_level="AUTOCOMMIT")
+    with admin.connect() as c:
+        c.execute(text("DROP DATABASE IF EXISTS atalaia_test_gerador WITH (FORCE)"))
+        c.execute(text("CREATE DATABASE atalaia_test_gerador"))
+    env = {**os.environ, "DATABASE_URL": url, "SCHEDULER_ENABLED": "false"}
+
+    def rodar(*args):
+        r = subprocess.run([sys.executable, "-m", *args], cwd=RAIZ, env=env, capture_output=True, text=True, timeout=600)
+        assert r.returncode == 0, r.stdout + r.stderr
+        return r.stdout
+
+    rodar("alembic", "upgrade", "head")
+    rodar("scripts.seed", "--quantidade", "6000", "--data-referencia", "2026-10-25")
+    rodar("scripts.preparar_central")
+    rodar("scripts.gerar_historico")
+    eng = create_engine(url)
+    yield eng, rodar
+    eng.dispose()
+    with admin.connect() as c:
+        c.execute(text("DROP DATABASE IF EXISTS atalaia_test_gerador WITH (FORCE)"))
+    admin.dispose()
