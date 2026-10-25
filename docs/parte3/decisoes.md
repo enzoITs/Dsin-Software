@@ -107,3 +107,32 @@ Backtest de origem móvel nos últimos 91 dias, um corte por semana.
 | 30 dias | Precisão nos 50 primeiros | **52,9%** | — | 15,8% (taxa base 10,9%) |
 
 Peso médio dos fatores (P1, 7 dias): equipamento (marca e modelo) 39%, idade 19%, histórico de falhas 16%, manutenção 14%, local 5%, chuva 3%, calor 3%, furtos 1%. O teto de AUC é baixo de propósito: no gerador, cada equipamento tem uma fragilidade própria e a falha de um dia é um sorteio. O que importa para a decisão é o ranking: de cada 50 equipamentos apontados para a semana, cerca de 8 falham, contra 2 pelo baseline.
+
+## Fase 5 (P2 e P3)
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| Modelo de P2 | gradient boosting Poisson ou Tweedie | LightGBM Poisson por bairro × hora; a região é a soma dos bairros | Aprovado na Fase 0 |
+| Intervalo de P2 | quantílica ou conformal | Conformal com escore normalizado (\|real − previsto\| ÷ √previsto), calibrado nas últimas 4 semanas do treino, por região e hora; depois o modelo é refeito com todas as origens | Um só modelo, cobertura medida no backtest |
+| P2 por categoria | total e por categoria principal | O total previsto é repartido pela proporção de cada categoria na região, tipo de dia e hora nas 8 semanas anteriores | Um modelo por categoria triplicaria o treino; as proporções mudam pouco |
+| Nível de P2 | — | Previsto ÷ normal da mesma hora: muito acima (≥ 1,5), acima (≥ 1,15), normal, abaixo (< 0,85) | Linguagem do gestor |
+| "Normal da região" em P3 | — | Média de ocorrências por hora da região nas últimas 8 semanas (todas as horas), ponderada pela gravidade | Comparar com a mesma hora esconderia os picos que o gestor precisa ver (sexta à noite no Centro) |
+| Notas dos componentes de P3 | — | Ocorrências: normal = 10, o dobro = 60, 2,8 vezes = 100. Equipamentos: 15% da região fora de operação ou em risco alto = 100. Cobertura: 75% das câmeras e radares operando sem risco = 100. Agentes: a escala cobre a demanda = 0, cobre 40% = 100. Externos: 40 mil pessoas, 10 mm/h de chuva ou alerta de tempestade = 100 | Escalas simples, iguais para todas as regiões, documentadas no código |
+| Demanda de agentes | "uma equipe para cada N ocorrências" | 12 agentes-hora por ocorrência prevista na hora (configurável, `prev_agentes_por_ocorrencia`) | Calibrado para a escala média cobrir a demanda média |
+| Faixa de P3 | — | Índice recalculado com os limites do intervalo de P2 | A incerteza do índice vem da incerteza das ocorrências |
+| Períodos | 4 por dia | Madrugada (0 h às 6 h), manhã, tarde e noite; somas para contagens e agentes, máximos para eventos e chuva; o período em curso começa na origem | — |
+| Previsões gravadas | — | De hora em hora: 360 de P2 (5 regiões × 72 h) e cerca de 425 de P3 (horas e períodos), com a origem no `detalhe`. Rodar de novo na mesma hora substitui | Previsões de origens diferentes ficam guardadas para o acertômetro |
+| Escala sintética (correção da Fase 2) | — | Equipes distribuídas pelas regiões na proporção do número de bairros | A versão anterior, pela posição dos agentes, deixava Leste e Norte sem nenhuma equipe |
+
+### Resultados de P2 no backtest (banco de demonstração)
+
+| Métrica (região e hora) | Modelo | Baseline sazonal |
+|---|---|---|
+| MAE | **1,244** | 1,333 |
+| Erro percentual | **46,1%** | 49,4% |
+| MAE nas horas de pico | **1,905** | 2,000 |
+| Cobertura do intervalo de 90% | 90% | — |
+
+Por região (MAE): Centro 1,65 (baseline 1,78), Sul 1,33 (1,40), Oeste 1,23 (1,35), Leste 1,12 (1,21), Norte 0,89 (0,92). O erro quase não cresce com o horizonte (1,24 nas primeiras 24 h e 1,25 entre 48 e 72 h), porque o modelo se apoia no calendário e nas entradas futuras (eventos, clima, escala), não nas últimas horas. Com média de 2,5 ocorrências por região e hora, boa parte do erro é o sorteio natural das contagens.
+
+Peso médio dos fatores de P2: hora e dia 49%, bairro 17%, padrão das últimas semanas 13%, agentes na escala 13% (efeito do viés de registro), eventos 3%, clima 2%.

@@ -93,7 +93,7 @@ def test_p1_supera_o_baseline_e_grava_cartoes_completos(banco_gerado):
     """Portão de qualidade: o teste falha se o modelo não superar o baseline em AUC e Brier no backtest."""
     eng, rodar = banco_gerado
     saida = rodar("app.preditivo.treinar", "--todos")
-    assert "previsões de P1 gravadas" in saida
+    assert "previsões de P1" in saida and "de P3 gravadas" in saida
     with eng.connect() as c:
         for janela in (7, 30):
             m, b = c.execute(text("SELECT metricas, metricas_baseline FROM modelo_versao WHERE ativo AND nome = :n"),
