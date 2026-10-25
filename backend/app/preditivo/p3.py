@@ -101,7 +101,10 @@ def descricao(c: str, e: Entrada) -> str:
         partes.append("alerta de tempestade")
     elif e.chuva_mm >= 0.5:
         partes.append(f"chuva de até {_fmt(e.chuva_mm)} mm por hora")
-    return "; ".join(partes).capitalize() if partes else "Sem evento grande nem chuva prevista"
+    if not partes:
+        return "Sem evento grande nem chuva prevista"
+    texto = "; ".join(partes)
+    return texto[0].upper() + texto[1:]
 
 
 def indice(e: Entrada, pesos: dict[str, float]) -> dict:

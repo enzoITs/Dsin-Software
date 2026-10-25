@@ -2,7 +2,7 @@
 
 Uso:
   python -m app.preditivo.treinar --baselines   avalia os baselines no backtest de origem móvel e grava
-  python -m app.preditivo.treinar --todos       baselines, P1 (risco de falha), P2 (ocorrências), P3 (índice)
+  python -m app.preditivo.treinar --todos       baselines, P1 (risco de falha), P2 (ocorrências), P3 (índice), P4 (equipes)
                                                 e as previsões em lote
 
 Cada avaliação vira uma linha em `modelo_versao` (métricas e período) e uma linha por corte em
@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.domain import limites
 from app.models import BacktestResultado, EstadoPreditivo, ModeloVersao
-from app.preditivo import artefatos, backtest, p1, p2, prever
+from app.preditivo import artefatos, backtest, p1, p2, planejamento, prever
 from app.preditivo import variaveis as V
 
 
@@ -170,6 +170,11 @@ def treinar(todos: bool = True, so_baselines: bool = False, log=print) -> dict:
                 n = prever.prever_p1(db, f)
                 n23 = prever.prever_p2_p3(db, f)
                 log(f"[treino] {n} previsões de P1, {n23['p2']} de P2 e {n23['p3']} de P3 gravadas")
+                progresso(db, etapa="Planejamento de equipes")
+                n4 = planejamento.prever_p4(db)
+                res["P4"] = n4
+                log(f"[treino] P4: {n4['recomendacoes']} recomendações de reforço; risco não coberto nas próximas 72 h "
+                    f"{n4['nao_coberto_antes']:.0f} → {n4['nao_coberto_depois']:.0f} ({n4['reducao_pct'] or 0:.0f}% menor)")
             progresso(db, situacao="pronto", etapa="Concluído", segundos=round(time.time() - t0, 1))
         except Exception as exc:
             db.rollback()

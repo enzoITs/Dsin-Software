@@ -170,7 +170,7 @@ def prever_p2_p3(db: Session, f: V.Fontes | None = None, agora: datetime | None 
         normal_h = float(x.normal_hora)
         razao = x.previsto / normal_h if normal_h > 0 else 1.0
         niv = "MUITO_ACIMA" if razao >= 1.5 else "ACIMA" if razao >= 1.15 else "ABAIXO" if razao < 0.85 else "NORMAL"
-        pr = props[(props.regiao == regiao) & (props.util == (local.dayofweek < 5)) & (props.hora == local.hour)]
+        pr = props[(props.regiao == regiao) & (props.util == (local.day_of_week < 5)) & (props.hora == local.hour)]
         cats = [{"categoria": c, "previstas": round(float(x.previsto * p_), 2)}
                 for c, p_ in sorted(zip(pr.categoria, pr.proporcao), key=lambda t: -t[1])[:4]]
         ev_pub, ev_nome = eventos.get((regiao, x.em), (0, None))

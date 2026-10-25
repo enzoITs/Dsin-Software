@@ -49,6 +49,9 @@ PADRAO: dict[str, Any] = {
     "prev_p2_retreino_semanas": 2,      # no backtest de P2, retreina a cada N cortes
     "prev_p3_pesos": {"ocorrencias": 40, "equipamentos": 20, "cobertura": 15, "agentes": 15, "externos": 10},
     "prev_agentes_por_ocorrencia": 12,  # agentes-hora necessários por ocorrência prevista na hora (demanda de P3 e P4)
+    "prev_p4_max_deslocamentos": 4,     # equipes que podem trocar de região em cada período
+    "prev_p4_min_equipes": 1,           # nenhuma região fica com menos equipes que isto (ou que já tinha)
+    "prev_p4_tempo_max_s": 10,          # tempo máximo da otimização; depois disso, heurística gulosa
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}

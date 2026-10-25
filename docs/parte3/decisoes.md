@@ -136,3 +136,22 @@ Peso médio dos fatores (P1, 7 dias): equipamento (marca e modelo) 39%, idade 19
 Por região (MAE): Centro 1,65 (baseline 1,78), Sul 1,33 (1,40), Oeste 1,23 (1,35), Leste 1,12 (1,21), Norte 0,89 (0,92). O erro quase não cresce com o horizonte (1,24 nas primeiras 24 h e 1,25 entre 48 e 72 h), porque o modelo se apoia no calendário e nas entradas futuras (eventos, clima, escala), não nas últimas horas. Com média de 2,5 ocorrências por região e hora, boa parte do erro é o sorteio natural das contagens.
 
 Peso médio dos fatores de P2: hora e dia 49%, bairro 17%, padrão das últimas semanas 13%, agentes na escala 13% (efeito do viés de registro), eventos 3%, clima 2%.
+
+## Fase 6 (P4)
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| Solver | PuLP com CBC ou OR-Tools | `scipy.optimize.milp` (HiGHS), já decidido na Fase 1 | Funciona sem internet e já vem com o SciPy |
+| Unidade de decisão | equipes por região e período | Cada turno da escala que toca o período é uma equipe com capacidade em agentes-hora (agentes × horas dentro do período). Os 4 períodos do dia são otimizados um a um | Um turno da noite que cruza a meia-noite conta só as horas de cada período |
+| Demanda | "uma equipe para cada N ocorrências, ajustada pela gravidade" | Agentes-hora = ocorrências previstas (P2) × 12 (configurável). A gravidade entra pelo peso da região, que é 1 + índice de risco ÷ 50 | Mesma demanda usada no componente de agentes do P3, para os dois números baterem |
+| Objetivo | minimizar o risco não coberto | Σ peso × agentes-hora que faltam, mais um custo pequeno por deslocamento (só se move uma equipe se isso ajudar) | Evita trocas sem ganho |
+| Restrição de órgão | "órgão de cada equipe" | Cada região mantém ao menos uma equipe de cada órgão que já tinha no período (trânsito, guarda municipal, polícia militar) | Nenhuma região fica, por exemplo, sem agente de trânsito |
+| Mínimo e máximo | mínimo por região, máximo de deslocamentos | Mínimo de 1 equipe (ou o que a região já tinha, se menos); no máximo 4 deslocamentos por período; regiões "fixas" (escolhidas pelo gestor) não cedem equipes | Configurável (`prev_p4_*`) e ajustável no recálculo |
+| "Muito alto" sem reforço | proibido | Restrição de pelo menos uma equipe a mais; se ficar impossível, a otimização roda sem ela e o plano avisa | Nunca devolve "sem solução" ao gestor |
+| Reserva | heurística gulosa | A cada passo, move a equipe que mais reduz o risco não coberto sem quebrar nenhuma restrição, com prioridade para regiões em risco muito alto; para quando nada mais ajuda | Usada se o HiGHS falhar ou passar de 10 s |
+| Saída | texto direto | "Domingo (25/10), 18 h às 24 h: reforçar a região Centro com +1 equipe de trânsito (CET), vinda da região Norte (risco previsto baixo nesse horário). Motivo: Palmeiras x São Paulo com 38 mil pessoas; ocorrências esperadas 1,4× o normal do horário." | Uma recomendação pendente por destino e período; uma previsão P4 por região e período com o cartão completo. Recomendações pendentes de planos anteriores expiram |
+| API | `GET /planejamento/equipes`, `POST .../recalcular` | Iguais; o recálculo aceita máximo de deslocamentos, mínimo por região e regiões fixas, e só grava (`salvar`) com perfil de gestor | — |
+
+### Resultado de P4 (banco de demonstração, próximas 72 h a partir de 25/10, 12 h)
+
+Risco não coberto (agentes-hora ponderados pelo risco), somando os 12 períodos: **1.731 com a escala atual → 637 com a recomendada (63% menor)**, com 17 recomendações de reforço e no máximo 4 deslocamentos por período. As madrugadas quase não mudam: há poucas equipes em turno, e as regiões que as têm não podem cedê-las sem ficar abaixo do mínimo. A otimização dos 12 períodos leva cerca de 0,5 s.
