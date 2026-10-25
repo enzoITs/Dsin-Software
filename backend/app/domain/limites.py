@@ -46,6 +46,9 @@ PADRAO: dict[str, Any] = {
     "prev_p1_retreino_semanas": 2,      # no backtest de P1, retreina a cada N cortes
     "prev_p1_limites_nivel": [0.05, 0.12, 0.25],      # P1 em 7 dias: moderado, alto e muito alto a partir de
     "prev_p1_limites_nivel_30d": [0.15, 0.30, 0.50],  # P1 em 30 dias
+    "prev_p2_retreino_semanas": 2,      # no backtest de P2, retreina a cada N cortes
+    "prev_p3_pesos": {"ocorrencias": 40, "equipamentos": 20, "cobertura": 15, "agentes": 15, "externos": 10},
+    "prev_agentes_por_ocorrencia": 12,  # agentes-hora necessários por ocorrência prevista na hora (demanda de P3 e P4)
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}

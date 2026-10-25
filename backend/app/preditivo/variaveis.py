@@ -84,7 +84,7 @@ def carregar(db: Session) -> Fontes:
     oc = _df(db, """SELECT o.inicio_em em, o.bairro_id, o.regiao_id, o.categoria, o.gravidade
                     FROM ocorrencia o WHERE o.bairro_id IS NOT NULL ORDER BY o.inicio_em""")
     oc["em"] = _utc(oc.em)
-    ev = _df(db, """SELECT inicio_em, fim_em, publico_estimado publico, raio_influencia_m raio,
+    ev = _df(db, """SELECT nome, inicio_em, fim_em, publico_estimado publico, raio_influencia_m raio,
                            ST_X(geom) lon, ST_Y(geom) lat FROM evento_cidade WHERE geom IS NOT NULL""")
     ev["inicio_em"], ev["fim_em"] = _utc(ev.inicio_em), _utc(ev.fim_em)
     esc = _df(db, "SELECT regiao_id, inicio_em, fim_em, agentes FROM escala_agente")

@@ -101,6 +101,16 @@ class Contexto:
 TURNOS = {"manha": (6, 8), "tarde": (14, 8), "noite": (22, 8)}
 
 
+def _repartir(total: int, pesos: dict[str, int]) -> dict[str, int]:
+    """Divide `total` inteiros na proporção dos pesos (maiores restos), cada região com pelo menos 1 se der."""
+    soma = sum(pesos.values()) or 1
+    bruto = {k: total * v / soma for k, v in pesos.items()}
+    cotas = {k: int(v) for k, v in bruto.items()}
+    for k in sorted(bruto, key=lambda k: bruto[k] - cotas[k], reverse=True)[: total - sum(cotas.values())]:
+        cotas[k] += 1
+    return cotas
+
+
 def carregar(db: Session, semente: int) -> Contexto:
     cidade_id = db.scalar(text("SELECT id FROM cidade WHERE tem_lista_bairros ORDER BY id LIMIT 1"))
     regioes = {nome: rid for rid, nome in db.execute(select(Regiao.id, Regiao.nome).where(Regiao.cidade_id == cidade_id))}
@@ -119,19 +129,26 @@ def carregar(db: Session, semente: int) -> Contexto:
             pts = np.vstack([pts, c[shapely.contains_xy(geom, c[:, 0], c[:, 1])]])
         pontos.append(pts[:3000])
 
-    # Equipes: agentes agrupados pela equipe; região onde está a maioria; turno e folgas fixos pela equipe.
+    # Equipes: agentes agrupados pela equipe. Cada equipe é escalada numa região, distribuídas na
+    # proporção do número de bairros de cada região (o tamanho, não a demanda: é isso que P4 corrige).
     linhas = db.execute(text("""
-        SELECT a.equipe, mode() WITHIN GROUP (ORDER BY a.orgao_id) orgao_id,
-               mode() WITHIN GROUP (ORDER BY a.regiao) regiao, count(*) n
+        SELECT a.equipe, mode() WITHIN GROUP (ORDER BY a.orgao_id) orgao_id, count(*) n
         FROM agente a WHERE a.equipe IS NOT NULL GROUP BY a.equipe ORDER BY a.equipe
     """)).all()
+    tamanho = {r: sum(1 for b in bairros if b["regiao"] == r) for r in sorted(regioes)}
+    tamanho = {r: n for r, n in tamanho.items() if n}
+    cotas = _repartir(len(linhas), tamanho)
+    ordem = np.random.default_rng(P.chave("equipes", semente)).permutation(len(linhas))
+    regiao_da = {}
+    k = 0
+    for reg, n in cotas.items():
+        for _ in range(n):
+            regiao_da[int(ordem[k])] = reg
+            k += 1
     equipes = []
-    nomes_reg = sorted(regioes)
-    for eq, org, reg, n in linhas:
+    for i, (eq, org, n) in enumerate(linhas):
         r = np.random.default_rng(P.chave("equipe", semente, eq))
-        reg = reg if reg in regioes else (nomes_reg[int(r.integers(len(nomes_reg)))] if nomes_reg else None)
-        if reg is None:
-            continue
+        reg = regiao_da[i]
         turno = str(r.choice(list(TURNOS), p=[0.4, 0.35, 0.25]))
         folgas = tuple(int(x) for x in r.choice(7, 2, replace=False))
         equipes.append({"equipe": eq, "orgao_id": org, "regiao": reg, "regiao_id": regioes[reg],
