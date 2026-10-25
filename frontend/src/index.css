@@ -26,18 +26,20 @@ body {
 .num { font-variant-numeric: tabular-nums; }
 .cond { font-family: var(--font-cond); font-stretch: condensed; letter-spacing: -0.02em; }
 
-/* Campos padrão do painel */
-.campo {
-  width: 100%;
-  border: 1px solid var(--color-linha);
-  background: var(--color-papel);
-  padding: 7px 9px;
-  font-size: 14px;
-  outline: none;
+/* Campos padrão do painel (em components: as classes utilitárias, como w-auto, podem sobrescrever) */
+@layer components {
+  .campo {
+    width: 100%;
+    border: 1px solid var(--color-linha);
+    background: var(--color-papel);
+    padding: 7px 9px;
+    font-size: 14px;
+    outline: none;
+  }
+  .campo:focus { border-color: var(--color-tinta); }
+  .campo[aria-invalid="true"] { border-color: var(--color-critico); }
+  .rotulo { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
 }
-.campo:focus { border-color: var(--color-tinta); }
-.campo[aria-invalid="true"] { border-color: var(--color-critico); }
-.rotulo { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
 
 /* Formulário gerado pelo JSON Schema (react-jsonschema-form) */
 .form-dinamico fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }

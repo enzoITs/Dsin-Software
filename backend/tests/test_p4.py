@@ -114,3 +114,13 @@ def test_planejamento_gravado_no_banco_gerado(banco_gerado):
         assert imp["nao_coberto_depois"] <= imp["nao_coberto_antes"]
     for fat, dados, det in cartoes:
         assert fat and dados and det["como_ajuda"] and det["acao_recomendada"]["texto"] and det["o_que_preve"]
+
+
+@pytest.mark.parametrize("semente", range(8))
+def test_regiao_nao_cede_e_recebe_no_mesmo_periodo(semente):
+    equipes, regioes = _caso(100 + semente, n_equipes=20)
+    for r in (p4.otimizar(equipes, regioes, 6), p4.guloso(equipes, regioes, 6)):
+        for reg in REGIOES:
+            cede = any(e.regiao == reg and r.alocacao[e.id] != reg for e in equipes)
+            recebe = any(e.regiao != reg and r.alocacao[e.id] == reg for e in equipes)
+            assert not (cede and recebe), (reg, r.metodo)

@@ -54,6 +54,14 @@ Não há login. O seletor no topo escolhe o perfil, enviado à API em cabeçalho
 
 ## Parte 3 — Cidade Preditiva (em construção)
 
+| Endereço | O que é |
+|---|---|
+| http://localhost:5173/amanha | **Amanhã**: mapa de risco das próximas 72 h, recomendações e contexto (feriados, eventos, clima editável) |
+| http://localhost:5173/previsao/equipamentos | Equipamentos em risco de falha (7 e 30 dias), com OS preventiva em lote |
+| http://localhost:5173/previsao/equipes | Planejamento de equipes: escala atual × recomendada |
+
+Toda previsão aparece num **Cartão de Previsão** com três partes fixas: "O que estamos prevendo", "Com base em quê" e "Como isso ajuda", mais a qualidade do modelo contra a média histórica e os botões Aceitar, Ajustar e Rejeitar.
+
 Plano e andamento: [docs/parte3/00-reconhecimento.md](docs/parte3/00-reconhecimento.md), decisões em [docs/parte3/decisoes.md](docs/parte3/decisoes.md).
 
 **Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 160 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, descritos em [docs/parte3/padroes-plantados.md](docs/parte3/padroes-plantados.md). Os modelos não leem essa descrição: precisam redescobrir os padrões.
@@ -250,6 +258,6 @@ Estrutura:
 - `backend/app/preditivo`: Parte 3 (calendário, clima, padrões plantados, geradores, modo contínuo).
 - `frontend/src/pages/Central.tsx` e `frontend/src/central/`: a tela da central (mapa, painéis, WebSocket).
 
-Testes: 182 no backend (73 da Parte 1, 39 da Parte 2, 70 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1, P2 e P3 superando os baselines, índice de risco, otimização de equipes respeitando as restrições, anomalias plantadas encontradas e série normal sem alarme) e 13 no frontend.
+Testes: 197 no backend (73 da Parte 1, 39 da Parte 2, 85 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1, P2 e P3 superando os baselines, índice de risco, otimização de equipes respeitando as restrições, anomalias plantadas encontradas e série normal sem alarme, contrato de previsão e decisões) e 17 no frontend.
 
 Como a IA foi usada no desenvolvimento e nos recursos do sistema: [docs/uso-de-ia.md](docs/uso-de-ia.md).

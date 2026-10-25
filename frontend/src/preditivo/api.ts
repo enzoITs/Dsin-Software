@@ -1,0 +1,83 @@
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "../api/client";
+import type { Amanha, Cartao, DetalheRegiao, Plano, Ranking, Recomendacao } from "./tipos";
+
+export const useAmanha = () =>
+  useQuery({ queryKey: ["prev", "amanha"], queryFn: () => api<Amanha>("/amanha"), refetchInterval: 5 * 60_000, retry: false });
+
+export const useDetalheRegiao = (id: number | null) =>
+  useQuery({ queryKey: ["prev", "regiao", id], enabled: id != null, queryFn: () => api<DetalheRegiao>(`/amanha/regioes/${id}`) });
+
+export const useCartao = (id: number | null) =>
+  useQuery({ queryKey: ["prev", "cartao", id], enabled: id != null, queryFn: () => api<Cartao>(`/previsoes/${id}`) });
+
+export const useCartoes = (params: Record<string, string | number | boolean | undefined>, ativo = true) =>
+  useQuery({ queryKey: ["prev", "cartoes", params], enabled: ativo, queryFn: () => api<Cartao[]>("/previsoes", { params }) });
+
+export const useRanking = (params: Record<string, string | number | string[] | undefined>) =>
+  useQuery({ queryKey: ["prev", "ranking", params], queryFn: () => api<Ranking>("/equipamentos/risco", { params }),
+             placeholderData: keepPreviousData, retry: false });
+
+export const useRiscoEquipamento = (id: number) =>
+  useQuery({ queryKey: ["prev", "risco-eq", id], queryFn: () => api<{ cartoes: Cartao[]; mensagem: string | null }>(`/equipamentos/${id}/risco`),
+             retry: false });
+
+export const usePlano = () => useQuery({ queryKey: ["prev", "plano"], queryFn: () => api<Plano>("/planejamento/equipes"), retry: false });
+
+export const useRecomendacoes = (params: Record<string, string | undefined>) =>
+  useQuery({ queryKey: ["prev", "recs", params], queryFn: () => api<Recomendacao[]>("/recomendacoes", { params }) });
+
+export interface DecisaoIn { acao: "aceitar" | "ajustar" | "rejeitar"; motivo?: string; parametros?: Record<string, unknown> }
+
+export function useDecidir() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ previsaoId, ...body }: DecisaoIn & { previsaoId: number }) =>
+      api<Cartao>(`/previsoes/${previsaoId}/decisao`, { method: "POST", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev"] }),
+  });
+}
+
+export function useDecidirRecomendacao() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: DecisaoIn & { id: number }) => api<Recomendacao>(`/recomendacoes/${id}`, { method: "PATCH", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev"] }),
+  });
+}
+
+export function useOrdensLote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (previsao_ids: number[]) =>
+      api<{ abertas: { previsao_id: number; ordem_servico_id?: number }[]; puladas: { previsao_id: number; motivo: string }[] }>(
+        "/equipamentos/risco/ordens", { method: "POST", body: { previsao_ids } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev"] }),
+  });
+}
+
+export function useRecalcularPlano() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { max_deslocamentos?: number; min_por_regiao?: number; regioes_fixas?: string[]; salvar?: boolean }) =>
+      api<Plano>("/planejamento/equipes/recalcular", { method: "POST", body }),
+    onSuccess: (_d, v) => { if (v.salvar) qc.invalidateQueries({ queryKey: ["prev"] }); },
+  });
+}
+
+export function useRecalcularPrevisoes() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<Record<string, number>>("/previsoes/recalcular", { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev"] }),
+  });
+}
+
+export function useEditarClima() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { inicio: string; fim: string; chuva_mm?: number; temperatura_c?: number; alerta_tempestade?: boolean }) =>
+      api<{ horas_alteradas: number }>("/clima/previsao", { method: "PUT", body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev", "amanha"] }),
+  });
+}

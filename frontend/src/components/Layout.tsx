@@ -5,6 +5,9 @@ import type { Perfil } from "../api/client";
 
 const LINKS = [
   { to: "/central", rotulo: "Central de operações" },
+  { to: "/amanha", rotulo: "Amanhã" },
+  { to: "/previsao/equipamentos", rotulo: "Equipamentos em risco" },
+  { to: "/previsao/equipes", rotulo: "Planejamento de equipes" },
   { to: "/", rotulo: "Inventário", fim: true },
   { to: "/equipamentos/novo", rotulo: "Cadastrar" },
   { to: "/agentes", rotulo: "Agentes" },

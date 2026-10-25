@@ -13,6 +13,10 @@ import { Carregando, Vazio } from "./components/ui";
 
 // A central (mapa, gráficos) fica num pacote separado: o inventário abre sem carregá-la.
 const Central = lazy(() => import("./pages/Central"));
+// Parte 3: telas de previsão, também em pacotes separados.
+const Amanha = lazy(() => import("./pages/Amanha"));
+const EquipamentosRisco = lazy(() => import("./pages/EquipamentosRisco"));
+const Planejamento = lazy(() => import("./pages/Planejamento"));
 
 export default function App() {
   return (
@@ -20,7 +24,10 @@ export default function App() {
       <Routes>
         <Route path="/campo/*" element={<Campo />} />
         <Route path="/central" element={<Suspense fallback={<Carregando texto="Abrindo a central…" />}><Central /></Suspense>} />
+        <Route path="/amanha" element={<Suspense fallback={<Carregando texto="Abrindo as previsões…" />}><Amanha /></Suspense>} />
         <Route element={<Layout />}>
+          <Route path="previsao/equipamentos" element={<Suspense fallback={<Carregando />}><EquipamentosRisco /></Suspense>} />
+          <Route path="previsao/equipes" element={<Suspense fallback={<Carregando />}><Planejamento /></Suspense>} />
           <Route index element={<Inventario />} />
           <Route path="equipamentos/novo" element={<CadastroEquipamento />} />
           <Route path="equipamentos/:id" element={<FichaEquipamento />} />

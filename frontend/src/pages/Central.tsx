@@ -114,7 +114,8 @@ export default function Central() {
           </>
         ) : (
           <>
-            <div className="ml-auto"><Ferramentas /></div>
+            <Link to="/amanha" className="ml-auto text-[13px] font-semibold underline">Amanhã (previsões)</Link>
+            <div><Ferramentas /></div>
             <SeletorPerfil />
           </>
         )}

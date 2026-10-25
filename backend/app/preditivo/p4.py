@@ -10,7 +10,8 @@ Duas etapas:
    - nenhuma região fica com menos equipes que o mínimo (ou que tinha, se tinha menos);
    - cada região mantém ao menos uma equipe de cada órgão que já tinha (trânsito, guarda, polícia);
    - no máximo `max_deslocamentos` equipes trocam de região no período;
-   - região em risco "Muito alto" recebe ao menos uma equipe a mais (se for possível).
+   - região em risco "Muito alto" recebe ao menos uma equipe a mais (se for possível);
+   - uma região não cede e recebe equipes no mesmo período (trocas confundem e não ajudam o gestor).
    Se a otimização falhar ou passar do tempo, uma heurística gulosa documentada faz a alocação.
 
 Funções puras: recebem equipes e regiões, devolvem a alocação e o risco não coberto antes e depois.
@@ -101,6 +102,11 @@ def violacoes(alocacao: dict[str, str], equipes: list[Equipe], regioes: list[Reg
         for o in orgaos[r.nome]:
             if not any(alocacao.get(e.id) == r.nome and e.orgao == o for e in equipes):
                 erros.append(f"{r.nome} sem equipe do órgão {o}")
+    for r in regioes:
+        cede = any(e.regiao == r.nome and alocacao.get(e.id) != r.nome for e in equipes)
+        recebe = any(e.regiao != r.nome and alocacao.get(e.id) == r.nome for e in equipes)
+        if cede and recebe:
+            erros.append(f"{r.nome} cede e recebe equipes no mesmo período")
     mov = sum(1 for e in equipes if alocacao.get(e.id) != e.regiao)
     if mov > max_deslocamentos:
         erros.append(f"{mov} deslocamentos, acima do máximo de {max_deslocamentos}")
@@ -122,20 +128,22 @@ def otimizar(equipes: list[Equipe], regioes: list[Regiao], max_deslocamentos: in
     ri = {n: j for j, n in enumerate(nomes)}
     nx = T * R
     xi = lambda t, r: t * R + r  # noqa: E731
+    ny = nx + R          # depois de x e da falta u, uma variável por região: 1 = recebe, 0 = pode ceder
+    total = ny + R
     minimo, orgaos = _minimos(equipes, regioes, min_por_regiao)
     media_cap = float(np.mean([e.capacidade for e in equipes])) or 1.0
 
-    c = np.zeros(nx + R)
+    c = np.zeros(total)
     for t, e in enumerate(equipes):
         for r in range(R):
             if nomes[r] != e.regiao:
                 c[xi(t, r)] = 0.01 * media_cap      # deslocar tem um custo pequeno: só se valer a pena
-    c[nx:] = [r.peso for r in regioes]
+    c[nx:ny] = [r.peso for r in regioes]
 
     linhas, lo, hi = [], [], []
 
     def restr(coef: dict[int, float], a: float, b: float) -> None:
-        v = np.zeros(nx + R)
+        v = np.zeros(total)
         for k, val in coef.items():
             v[k] = val
         linhas.append(v)
@@ -152,9 +160,15 @@ def otimizar(equipes: list[Equipe], regioes: list[Regiao], max_deslocamentos: in
         for o in orgaos[reg.nome]:                                       # órgãos que a região já tinha
             restr({xi(t, r): 1 for t, e in enumerate(equipes) if e.orgao == o}, 1, np.inf)
     restr({xi(t, r): 1 for t, e in enumerate(equipes) for r in range(R) if nomes[r] != e.regiao}, 0, max_deslocamentos)
-    ub = np.ones(nx + R)
-    ub[nx:] = np.inf
-    lb = np.zeros(nx + R)
+    for r in range(R):                                                   # não ceder e receber no mesmo período
+        de_fora = {xi(t, r): 1 for t, e in enumerate(equipes) if e.regiao != nomes[r]}
+        restr({**de_fora, ny + r: -T}, -np.inf, 0)                       # recebe só se y_r = 1
+        da_casa = [t for t, e in enumerate(equipes) if e.regiao == nomes[r]]
+        if da_casa:                                                      # cede (casa < n) só se y_r = 0
+            restr({**{xi(t, r): -1 for t in da_casa}, ny + r: len(da_casa)}, -np.inf, 0)
+    ub = np.ones(total)
+    ub[nx:ny] = np.inf
+    lb = np.zeros(total)
     for t, e in enumerate(equipes):                                      # regiões fixas: ninguém sai
         if fixas and e.regiao in fixas:
             lb[xi(t, ri[e.regiao])] = 1
@@ -163,12 +177,12 @@ def otimizar(equipes: list[Equipe], regioes: list[Regiao], max_deslocamentos: in
     if exigir_muito_alto:
         for r in muito_alto:
             atual = sum(1 for e in equipes if e.regiao == nomes[r])
-            v = np.zeros(nx + R)
+            v = np.zeros(total)
             for t in range(T):
                 v[xi(t, r)] = 1
             extras.append((v, atual + 1))
 
-    integralidade = np.r_[np.ones(nx), np.zeros(R)]
+    integralidade = np.r_[np.ones(nx), np.zeros(R), np.ones(R)]
     for tentativa in (extras, []):
         A = np.array(linhas + [v for v, _ in tentativa])
         a = np.array(lo + [b for _, b in tentativa])

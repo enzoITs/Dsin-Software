@@ -10,6 +10,7 @@ import {
 import { camposOrdenados, type Equipamento, type Situacao } from "../api/tipos";
 import { rotuloEnum } from "../components/FormDinamico";
 import MapaPonto from "../components/MapaPonto";
+import RiscoEquipamento from "../preditivo/RiscoEquipamento";
 import { Avisos, Botao, Campo, Carregando, Erro, Score, Secao, SeloSituacao } from "../components/ui";
 import { MANUTENCAO, SITUACAO, data, dataHora, haQuanto } from "../lib/rotulos";
 
@@ -223,6 +224,8 @@ export default function FichaEquipamento() {
           </ul>
         </div>
       </div>
+
+      <div className="mb-10"><RiscoEquipamento id={e.id} /></div>
 
       <div className="grid gap-10 lg:grid-cols-2">
         <div className="space-y-8">
