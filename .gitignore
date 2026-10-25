@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+node_modules/
+dist/
+.pytest_cache/
+uploads/
+simulador_parados.json
+backend/simulacao_estado.json
+*.tsbuildinfo
+backend/modelos/

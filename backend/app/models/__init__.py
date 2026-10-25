@@ -1,0 +1,21 @@
+from app.models.entidades import (  # noqa: F401
+    Agente,
+    Alerta,
+    Anexo,
+    Bairro,
+    Base,
+    BaseOperacional,
+    Cidade,
+    ConfigMotor,
+    Equipamento,
+    HistoricoSituacao,
+    Instantaneo,
+    Localizacao,
+    OrdemServico,
+    Orgao,
+    PlanoManutencao,
+    RegistroManutencao,
+    Regiao,
+    TipoEquipamento,
+)
+from app.models.enums import *  # noqa: F401,F403

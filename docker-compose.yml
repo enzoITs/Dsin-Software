@@ -1,0 +1,66 @@
+services:
+  db:
+    image: docker.io/postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: atalaia
+      POSTGRES_PASSWORD: atalaia
+      POSTGRES_DB: atalaia
+    ports:
+      - "5433:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atalaia"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: docker.io/library/redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  api:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://atalaia:atalaia@db:5432/atalaia
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app:z
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: on-failure
+    command: sh -c "python -m scripts.esperar_banco && alembic upgrade head && python -m scripts.seed --se-vazio && python -m scripts.preparar_central && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  simulador:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://atalaia:atalaia@db:5432/atalaia
+    volumes:
+      - ./backend:/app:z
+    depends_on:
+      - api
+    restart: on-failure
+    command: sh -c "python -m scripts.esperar_banco && python -m scripts.simulador_telemetria --api http://api:8000 --ciclo 60 --posicao 15"
+
+  web:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app:z
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  dbdata:
+  uploads:

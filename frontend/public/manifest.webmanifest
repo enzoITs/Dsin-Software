@@ -1,0 +1,9 @@
+{
+  "name": "Atalaia — modo campo",
+  "short_name": "Atalaia",
+  "start_url": "/campo",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [{ "src": "/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-cond: "Helvetica Neue Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --color-papel: #ffffff;
+  --color-neutro: #f7f7f8;
+  --color-tinta: #111111;
+  --color-cinza: #6b6b6b;
+  --color-linha: #d9d9dc;
+  --color-acento: #ff4f00;
+  --color-ok: #1f9d55;
+  --color-atencao: #d99a00;
+  --color-critico: #d62828;
+  --color-inativo: #9a9aa0;
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--color-papel);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+.num { font-variant-numeric: tabular-nums; }
+.cond { font-family: var(--font-cond); font-stretch: condensed; letter-spacing: -0.02em; }
+
+/* Campos padrão do painel */
+.campo {
+  width: 100%;
+  border: 1px solid var(--color-linha);
+  background: var(--color-papel);
+  padding: 7px 9px;
+  font-size: 14px;
+  outline: none;
+}
+.campo:focus { border-color: var(--color-tinta); }
+.campo[aria-invalid="true"] { border-color: var(--color-critico); }
+.rotulo { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+
+/* Formulário gerado pelo JSON Schema (react-jsonschema-form) */
+.form-dinamico fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.form-dinamico fieldset > legend { display: none; }
+.form-dinamico fieldset > .form-group { margin-bottom: 14px; }
+.form-dinamico .form-group > fieldset { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px 20px; }
+.form-dinamico label.control-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.form-dinamico .required { color: var(--color-acento); margin-left: 2px; }
+.form-dinamico input[type="text"], .form-dinamico input[type="number"], .form-dinamico input[type="date"],
+.form-dinamico select, .form-dinamico textarea {
+  width: 100%; border: 1px solid var(--color-linha); background: #fff; padding: 7px 9px; font-size: 14px; outline: none;
+}
+.form-dinamico input:focus, .form-dinamico select:focus { border-color: var(--color-tinta); }
+.form-dinamico .checkbox label, .form-dinamico .checkboxes label { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+.form-dinamico .field-boolean > label.control-label { display: none; }
+.form-dinamico .field-boolean .checkbox { padding-top: 22px; }
+.form-dinamico .checkboxes { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.form-dinamico .field-description { font-size: 12px; color: var(--color-cinza); }
+.form-dinamico .error-detail { list-style: none; padding: 0; margin: 4px 0 0; color: var(--color-critico); font-size: 12px; }
+.form-dinamico .has-error input, .form-dinamico .has-error select { border-color: var(--color-critico); }
+.form-dinamico .panel.errors { display: none; }
+.form-dinamico button[type="submit"] { display: none; }
+
+/* Mapa sem internet: fundo neutro */
+.maplibregl-map { background: var(--color-neutro); font-family: var(--font-sans); }
+
+/* Central: dica ao passar o mouse no mapa */
+.dica-mapa .maplibregl-popup-content { padding: 4px 8px; border-radius: 0; border: 1px solid var(--color-tinta); font-size: 12px; box-shadow: none; }
+.dica-mapa .maplibregl-popup-tip { display: none; }
+
+/* Modo sala de situação: escuro, para TV */
+.sala {
+  --color-papel: #101114;
+  --color-neutro: #1a1c20;
+  --color-tinta: #f2f2f2;
+  --color-cinza: #a2a2aa;
+  --color-linha: #2c2f35;
+  background: var(--color-papel);
+  color: var(--color-tinta);
+}
+.sala .maplibregl-ctrl-attrib, .sala .maplibregl-ctrl-scale { background: rgba(16,17,20,.7); color: #aaa; }
+.mapa-escuro .maplibregl-map { background: #15171a; }
