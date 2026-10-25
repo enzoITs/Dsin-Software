@@ -52,6 +52,7 @@ PADRAO: dict[str, Any] = {
     "prev_p4_max_deslocamentos": 4,     # equipes que podem trocar de região em cada período
     "prev_p4_min_equipes": 1,           # nenhuma região fica com menos equipes que isto (ou que já tinha)
     "prev_p4_tempo_max_s": 10,          # tempo máximo da otimização; depois disso, heurística gulosa
+    "prev_p5_horas_seguidas": 3,        # anomalia de região: ocorrências acima do previsto por N horas seguidas
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}

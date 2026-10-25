@@ -155,3 +155,20 @@ Peso médio dos fatores de P2: hora e dia 49%, bairro 17%, padrão das últimas 
 ### Resultado de P4 (banco de demonstração, próximas 72 h a partir de 25/10, 12 h)
 
 Risco não coberto (agentes-hora ponderados pelo risco), somando os 12 períodos: **1.731 com a escala atual → 637 com a recomendada (63% menor)**, com 17 recomendações de reforço e no máximo 4 deslocamentos por período. As madrugadas quase não mudam: há poucas equipes em turno, e as regiões que as têm não podem cedê-las sem ficar abaixo do mínimo. A otimização dos 12 períodos leva cerca de 0,5 s.
+
+## Fase 7 (P5)
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| Detectores | equipamento, região e operação | Equipamento e região. O de operação ficou fora | Primeiro item da ordem de corte aprovada na Fase 0 |
+| Equipamento: método | STL e escore robusto; Isolation Forest no perfil diário | STL robusta (período de 24 h) nos 60 a 3 dias anteriores; nível e padrão do dia pelas medianas de toda a referência; escala = maior entre a dispersão robusta dos resíduos (MAD) e a raiz do esperado (contagens). Regras: **queda sustentada** (escore das últimas 24 h somadas ≤ −4 e menos da metade do esperado) e **queda recorrente** (horas com escore ≤ −4 e menos da metade do esperado, no mesmo horário, em 2 dias ou mais) | Com medianas, uma mudança só vira "o novo normal" se ocupar mais da metade da referência; por isso as anomalias plantadas há 25 e 30 dias continuam aparecendo. O escore das 24 h somadas é justo com radares de pouco movimento |
+| Isolation Forest | detector | Segunda opinião: perfil diário (forma das 24 h, volume e horas abaixo do normal) de todos os equipamentos da métrica; o dia recente mais estranho que 95% dos dias de referência é marcado como atípico e mostrado junto da anomalia | O Isolation Forest isola qualquer dia diferente em poucas divisões (até uma queda isolada de uma hora) e não mede a intensidade; usado sozinho, daria alarmes falsos |
+| Região | observado fora do intervalo de P2 por N horas | Acima do limite superior do intervalo de 90% de P2 por 3 horas seguidas (configurável, `prev_p5_horas_seguidas`); para cada hora, vale a previsão feita na origem mais recente antes dela | Só "acima" vira alerta; menos ocorrências que o previsto não é problema para a central |
+| Alertas | regra `ANOMALIA_*` | Novos tipos `anomalia_equipamento` (nível inicial médio) e `anomalia_regiao` (alto) no motor da Parte 2; a migração 0005 já acrescenta também os 4 tipos `previsao_*` da Fase 9. O alerta guarda o gráfico esperado × observado das últimas 72 h (ou 24 h na região) e se resolve sozinho quando a série volta ao padrão | Mesmo ciclo de vida, central e canal de eventos das demais regras |
+| Frequência | a cada 5 minutos | Agendador da API, a cada 5 minutos (cerca de 25 s para 240 séries) | — |
+| Migração 0005 | reversível | Acrescenta valores ao enum `tipo_alerta`. Na volta, apaga os alertas desses tipos; os valores do enum ficam, sem uso | O PostgreSQL não remove valores de enum |
+| API | `GET /anomalias` | `GET /anomalias` (abertas, ou todas com `abertas=false`) com o gráfico; `POST /anomalias/verificar` roda na hora (gestor) | — |
+
+### Resultado de P5 (banco de demonstração)
+
+As 6 anomalias plantadas (3 radares com queda de 80%, que começaram 2, 9 e 25 dias antes da data de referência, e 3 câmeras que caem toda noite desde 5, 12 e 30 dias antes) foram encontradas. Nenhum alarme falso entre as 240 séries. Exemplos de mensagem: "RAD-2698: 86% menos infrações registradas que o esperado nas últimas 24 h" e "CAM-5448: fora do ar todos os dias entre 0 h e 5 h (3 dias seguidos)".

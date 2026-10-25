@@ -64,6 +64,13 @@ class TipoAlerta(str, enum.Enum):
     dispositivo_nao_cadastrado = "dispositivo_nao_cadastrado"
     agente_sem_posicao = "agente_sem_posicao"
     manutencao_proxima = "manutencao_proxima"
+    # Parte 3: anomalias (P5) e alertas preventivos (U3)
+    anomalia_equipamento = "anomalia_equipamento"
+    anomalia_regiao = "anomalia_regiao"
+    previsao_risco_regiao = "previsao_risco_regiao"
+    previsao_falha_equipamento = "previsao_falha_equipamento"
+    previsao_falta_agentes = "previsao_falta_agentes"
+    previsao_disponibilidade = "previsao_disponibilidade"
 
 
 class Severidade(str, enum.Enum):

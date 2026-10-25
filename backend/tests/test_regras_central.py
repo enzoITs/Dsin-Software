@@ -20,7 +20,10 @@ def test_nivel_inicial_de_cada_regra_segue_o_documento():
     for r in (R.sinal_degradado, R.manutencao_vencida, R.dispositivo_nao_cadastrado, R.agente_sem_posicao):
         assert regras.NIVEL_INICIAL[r] == N.media
     assert regras.NIVEL_INICIAL[R.manutencao_proxima] == N.baixa
-    assert len(regras.NIVEL_INICIAL) == 10
+    # 10 regras da Parte 2 + 6 da Parte 3 (anomalias e alertas preventivos)
+    parte3 = {R.anomalia_equipamento, R.anomalia_regiao, R.previsao_risco_regiao, R.previsao_falha_equipamento,
+              R.previsao_falta_agentes, R.previsao_disponibilidade}
+    assert len(set(regras.NIVEL_INICIAL) - parte3) == 10 and len(regras.NIVEL_INICIAL) == 16
 
 
 def test_sem_contexto_fica_no_nivel_inicial():

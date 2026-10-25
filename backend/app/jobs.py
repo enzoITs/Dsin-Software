@@ -3,6 +3,7 @@
 - A cada minuto: score de saúde e status de manutenção (Parte 1).
 - A cada 30 s: verificador do motor de interpretação (silêncio, prazos, agentes, regiões,
   escalonamento) e, a cada minuto, um instantâneo dos indicadores para a linha do tempo.
+- A cada 5 min: detectores de anomalias da Parte 3 (P5), que abrem e resolvem alertas ANOMALIA_*.
 """
 
 import logging
@@ -54,9 +55,22 @@ def verificar() -> dict:
     return res
 
 
+def anomalias() -> dict:
+    from app.preditivo import anomalias as p5
+
+    t0 = time.time()
+    with SessionLocal() as db:
+        res = p5.verificar(db)
+    res["segundos"] = round(time.time() - t0, 2)
+    if res.get("novas") or res.get("resolvidas"):
+        log.info("anomalias: %s", res)
+    return res
+
+
 def iniciar() -> None:
     scheduler.add_job(recalcular_tudo, "interval", minutes=1, id="recalcular", max_instances=1, coalesce=True)
     scheduler.add_job(verificar, "interval", seconds=30, id="verificador", max_instances=1, coalesce=True)
+    scheduler.add_job(anomalias, "interval", minutes=5, id="anomalias", max_instances=1, coalesce=True)
     scheduler.start()
 
 

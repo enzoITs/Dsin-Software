@@ -30,6 +30,12 @@ NIVEL_INICIAL: dict[TipoAlerta, NivelAlerta] = {
     R.dispositivo_nao_cadastrado: N.media,
     R.agente_sem_posicao: N.media,
     R.manutencao_proxima: N.baixa,
+    R.anomalia_equipamento: N.media,
+    R.anomalia_regiao: N.alta,
+    R.previsao_risco_regiao: N.media,
+    R.previsao_falha_equipamento: N.baixa,
+    R.previsao_falta_agentes: N.media,
+    R.previsao_disponibilidade: N.baixa,
 }
 
 ROTULO_REGRA = {
@@ -43,6 +49,12 @@ ROTULO_REGRA = {
     R.dispositivo_nao_cadastrado: "Dispositivo não cadastrado",
     R.agente_sem_posicao: "Agente sem posição",
     R.manutencao_proxima: "Manutenção próxima",
+    R.anomalia_equipamento: "Anomalia de equipamento",
+    R.anomalia_regiao: "Anomalia na região",
+    R.previsao_risco_regiao: "Previsão: risco alto na região",
+    R.previsao_falha_equipamento: "Previsão: falha de equipamento",
+    R.previsao_falta_agentes: "Previsão: falta de agentes",
+    R.previsao_disponibilidade: "Previsão: disponibilidade abaixo da meta",
 }
 
 # Problemas de equipamento que o contexto pode agravar.
