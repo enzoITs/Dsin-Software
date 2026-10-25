@@ -2,7 +2,7 @@
 
 Uso:
   python -m app.preditivo.treinar --baselines   avalia os baselines no backtest de origem móvel e grava
-  python -m app.preditivo.treinar --todos       tudo o que já existe (nesta fase, só os baselines)
+  python -m app.preditivo.treinar --todos       baselines, P1 (risco de falha) e as previsões em lote
 
 Cada avaliação vira uma linha em `modelo_versao` (métricas e período) e uma linha por corte em
 `backtest_resultado`. O progresso fica em `estado_preditivo` ("treino"), para a interface mostrar.
@@ -12,13 +12,14 @@ import argparse
 import time
 from datetime import date, datetime, timedelta, timezone
 
+import pandas as pd
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
 from app.domain import limites
 from app.models import BacktestResultado, EstadoPreditivo, ModeloVersao
-from app.preditivo import backtest
+from app.preditivo import artefatos, backtest, p1, prever
 from app.preditivo import variaveis as V
 
 
@@ -96,6 +97,37 @@ def baselines(db: Session, f: V.Fontes | None = None, log=print) -> dict:
     return saida
 
 
+def treinar_p1(db: Session, f: V.Fontes, log=print) -> dict:
+    """Backtest, modelo final (treinado até hoje), artefato e registro, para 7 e 30 dias."""
+    cfg = limites.carregar(db, forcar=True)
+    fim = fim_dos_dados(db)
+    saida = {}
+    for janela in (7, 30):
+        progresso(db, etapa=f"P1: backtest ({janela} dias)")
+        df = p1.dados(f, fim, cfg, janela)
+        r = p1.avaliar(f, df, fim, cfg, janela, log=lambda m: None)
+        progresso(db, etapa=f"P1: modelo final ({janela} dias)")
+        recente = df[df.corte > V.corte_local(fim) - pd.Timedelta(weeks=cfg["prev_treino_semanas"])]
+        modelo = p1.ajustar(recente, janela)
+        modelo.calibracao_backtest = r["modelo"]["calibracao"]
+        metricas = {**r["modelo"], "logistica": r["logistica"],
+                    "importancia": p1.importancia_global(modelo, recente.sample(min(len(recente), 20_000), random_state=0))}
+        nome = f"falha_equipamento_{janela}d"
+        mv = registrar(db, nome=nome, modulo="P1", fim=fim, inicio=modelo.treino_cortes[0], metricas=metricas,
+                       metricas_baseline=r["baseline"], por_corte=r["por_corte"],
+                       parametros={"lgbm": p1.PARAMS_LGBM, "calibracao": "isotônica", "janela_dias": janela,
+                                   "variaveis": p1.COLUNAS, "linhas_treino": len(recente)})
+        mv.caminho_artefato = artefatos.salvar(modelo, nome, mv.versao)
+        db.commit()
+        m, b, lg = r["modelo"], r["baseline"], r["logistica"]
+        log(f"[treino] P1 {janela} d: AUC {m['auc']:.3f} (baseline {b['auc']:.3f}, logística {lg['auc']:.3f}); "
+            f"Brier {m['brier']:.4f} (baseline {b['brier']:.4f}); precisão nos 50 primeiros {m['precisao_50']:.1%} "
+            f"(baseline {b['precisao_50']:.1%})")
+        saida[f"P1_{janela}d"] = {"modelo": {k: v for k, v in m.items() if k != "calibracao"},
+                                  "baseline": {k: v for k, v in b.items() if k != "calibracao"}}
+    return saida
+
+
 def treinar(todos: bool = True, so_baselines: bool = False, log=print) -> dict:
     t0 = time.time()
     with SessionLocal() as db:
@@ -104,6 +136,11 @@ def treinar(todos: bool = True, so_baselines: bool = False, log=print) -> dict:
         try:
             f = V.carregar(db)
             res = {"baselines": baselines(db, f, log)}
+            if not so_baselines:
+                res["P1"] = treinar_p1(db, f, log)
+                progresso(db, etapa="Previsões em lote")
+                n = prever.prever_p1(db, f)
+                log(f"[treino] {n} previsões de P1 gravadas")
             progresso(db, situacao="pronto", etapa="Concluído", segundos=round(time.time() - t0, 1))
         except Exception as exc:
             db.rollback()

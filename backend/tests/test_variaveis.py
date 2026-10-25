@@ -152,7 +152,7 @@ def test_baselines_avaliados_e_registrados(banco_gerado):
     assert "baseline P2" in saida
     with eng.connect() as c:
         ativos = dict(c.execute(text("SELECT nome, id FROM modelo_versao WHERE ativo")).all())
-        assert set(ativos) == {"baseline_falha_7d", "baseline_falha_30d", "baseline_ocorrencias", "baseline_disponibilidade_30d"}
+        assert {"baseline_falha_7d", "baseline_falha_30d", "baseline_ocorrencias", "baseline_disponibilidade_30d"} <= set(ativos)
         n = c.execute(text("SELECT count(*) FROM backtest_resultado WHERE modelo_versao_id = :i"),
                       {"i": ativos["baseline_falha_7d"]}).scalar()
         assert n == 13                                               # 90 dias, um corte por semana

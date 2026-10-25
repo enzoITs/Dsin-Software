@@ -43,6 +43,9 @@ PADRAO: dict[str, Any] = {
     "prev_p2_semanas_baseline": 8,      # baseline de P2: média da mesma hora e dia da semana em N semanas
     "prev_p6_media_dias": 30,           # baseline de P6: última média móvel de N dias
     "prev_horas_pico": [7, 8, 9, 17, 18, 19],  # horas de pico dos dias úteis, avaliadas à parte em P2
+    "prev_p1_retreino_semanas": 2,      # no backtest de P1, retreina a cada N cortes
+    "prev_p1_limites_nivel": [0.05, 0.12, 0.25],      # P1 em 7 dias: moderado, alto e muito alto a partir de
+    "prev_p1_limites_nivel_30d": [0.15, 0.30, 0.50],  # P1 em 30 dias
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}

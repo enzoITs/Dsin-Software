@@ -80,3 +80,30 @@ Backtest de origem móvel nos últimos 91 dias, um corte por semana.
 | P1, 30 dias | Taxa de falha do tipo | AUC 0,597; Brier 0,0961; precisão nos 50 primeiros 15,8% (taxa base 10,9%) |
 | P2 | Média da mesma hora e dia da semana em 8 semanas | MAE por região e hora 1,29 (média real 2,50 ocorrências), erro 51,8%; no pico, MAE 1,89 |
 | P6, 30 dias | Última média móvel de 30 dias | Erro médio de 0,53 ponto percentual |
+
+## Fase 4 (P1)
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| Modelo | LightGBM com regressão logística de comparação | LightGBM (250 árvores) e regressão logística (amostra de 150 mil linhas, one-hot), ambos avaliados no mesmo backtest | — |
+| Calibração | isotônica ou Platt | Isotônica, ajustada nas últimas 4 semanas de cortes do treino (o LightGBM treina nas anteriores) | Calibração sempre em dados posteriores aos do treino, como na operação |
+| SHAP | biblioteca SHAP | Contribuições TreeSHAP do próprio LightGBM (`pred_contrib`) | Mesmo cálculo, mais rápido e sem dependência extra em tempo de previsão. A biblioteca SHAP continua instalada para a Fase 10 (dependência parcial) |
+| Fatores no cartão | barras de contribuição em linguagem do gestor | Variáveis agrupadas em 8 fatores (idade, equipamento, manutenção, falhas, chuva, calor, furtos, local). A diferença entre a probabilidade do equipamento e a de um equipamento típico é repartida entre os fatores na proporção das contribuições SHAP; a soma dá exatamente a diferença | Várias variáveis técnicas descrevem a mesma coisa para o gestor (atraso, dias desde a preventiva...) |
+| Faixa da probabilidade | intervalo | Faixa de 90% (Wilson) para uma amostra de 300 casos com a mesma probabilidade | Lê-se "de cada 100 equipamentos assim, entre X e Y devem falhar" |
+| Níveis | — | 7 dias: moderado a partir de 5%, alto de 12%, muito alto de 25%; 30 dias: 15%, 30%, 50% (configuráveis) | Taxa base de 2,7% em 7 dias e 11% em 30 dias |
+| Backtest | origem móvel | Corte semanal nos últimos 91 dias (13 cortes em 7 dias, 9 em 30 dias), retreino a cada 2 cortes, treino com as 52 semanas anteriores cujo alvo já era conhecido no corte | Mantém o treino completo em cerca de 2 minutos |
+| Previsões gravadas | tabela `previsao` | Uma por equipamento em operação e horizonte (7 e 30 dias), com o cartão completo em `detalhe`; refazer no mesmo dia substitui | A API só lê |
+| Score de saúde e ficha | probabilidade na ficha e no score | Fica para a Fase 8 (telas) | Ordem do plano enxuto |
+
+### Resultados de P1 no backtest (banco de demonstração)
+
+| Horizonte | Métrica | Modelo | Regressão logística | Baseline (taxa do tipo) |
+|---|---|---|---|---|
+| 7 dias | AUC | **0,643** | 0,638 | 0,597 |
+| 7 dias | Brier | **0,0262** | — | 0,0264 |
+| 7 dias | Precisão nos 50 primeiros | **15,1%** | — | 3,8% (taxa base 2,7%) |
+| 30 dias | AUC | **0,646** | 0,645 | 0,597 |
+| 30 dias | Brier | **0,0928** | — | 0,0961 |
+| 30 dias | Precisão nos 50 primeiros | **52,9%** | — | 15,8% (taxa base 10,9%) |
+
+Peso médio dos fatores (P1, 7 dias): equipamento (marca e modelo) 39%, idade 19%, histórico de falhas 16%, manutenção 14%, local 5%, chuva 3%, calor 3%, furtos 1%. O teto de AUC é baixo de propósito: no gerador, cada equipamento tem uma fragilidade própria e a falha de um dia é um sorteio. O que importa para a decisão é o ranking: de cada 50 equipamentos apontados para a semana, cerca de 8 falham, contra 2 pelo baseline.
