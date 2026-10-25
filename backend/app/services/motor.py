@@ -36,7 +36,7 @@ from app.models.enums import (
     TipoAlerta,
     TipoPlano,
 )
-from app.services import central
+from app.services import central, ocorrencias
 from app.services.barramento import emitir, tocar
 from app.services.equipamentos import condicao_sem_sinal
 
@@ -225,6 +225,8 @@ def abrir(
     db.add(a)
     db.flush()
     _publicar_alerta(db, a, "novo")
+    if not linha_de_base and regra in ocorrencias.DE_ALERTA:
+        ocorrencias.de_alerta(db, a, lon, lat)  # Parte 3: furto e incidente viram ocorrência da cidade
     if not linha_de_base and a.nivel != N.baixa:
         cache.pop("estados_regiao", None)  # a região pode ter mudado de estado com este alerta
     if correlacionar and not linha_de_base and regra in regras.REGRAS_CORRELACIONAVEIS and regiao:

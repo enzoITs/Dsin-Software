@@ -18,4 +18,17 @@ from app.models.entidades import (  # noqa: F401
     Regiao,
     TipoEquipamento,
 )
+from app.models.preditivo import (  # noqa: F401
+    BacktestResultado,
+    Calendario,
+    CategoriaOcorrencia,
+    ClimaHora,
+    EscalaAgente,
+    EstadoPreditivo,
+    EventoCidade,
+    ModeloVersao,
+    Ocorrencia,
+    Previsao,
+    Recomendacao,
+)
 from app.models.enums import *  # noqa: F401,F403

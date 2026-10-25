@@ -5,7 +5,7 @@ import circle from "@turf/circle";
 import { ouvirEventos } from "./eventos";
 import { instalarIcones } from "./icones";
 import { useTela } from "./store";
-import type { EstadoCentral, Feicao, LinhaDoTempo, PropsAgente, PropsEquip, RegiaoSaude } from "./tipos";
+import type { EstadoCentral, Feicao, LinhaDoTempo, Ocorrencia, PropsAgente, PropsEquip, RegiaoSaude } from "./tipos";
 import { COR_REGIAO, RANK_NIVEL, gravidade } from "./visual";
 import { SITUACAO } from "../lib/rotulos";
 
@@ -42,9 +42,13 @@ interface Props {
   onArea: (pontos: [number, number][]) => void;
   escuro?: boolean;
   alcanceCameraM?: number;
+  ocorrencias?: Ocorrencia[];
 }
 
-export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linha, area, onArea, escuro = false, alcanceCameraM = 120 }: Props) {
+/** Cor das ocorrências da cidade: rosa, distinta da situação dos equipamentos e da cor dos órgãos. */
+export const COR_OCORRENCIA = "#e11d74";
+
+export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linha, area, onArea, escuro = false, alcanceCameraM = 120, ocorrencias }: Props) {
   const div = useRef<HTMLDivElement>(null);
   const mapa = useRef<maplibregl.Map | null>(null);
   const [pronto, setPronto] = useState(false);
@@ -58,6 +62,8 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
   const camadas = useTela((s) => s.camadas);
   const selecao = useTela((s) => s.selecao);
   const desenhando = useTela((s) => s.desenhando);
+  const registrando = useTela((s) => s.registrando);
+  const pontoOcorrencia = useTela((s) => s.pontoOcorrencia);
   const voo = useTela((s) => s.voo);
 
   // Linha do tempo: situação e alertas no momento escolhido
@@ -104,6 +110,8 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
       });
       m.addSource("agentes", { type: "geojson", data: FC() });
       m.addSource("sel", { type: "geojson", data: FC() });
+      m.addSource("ocorr", { type: "geojson", data: FC() });
+      m.addSource("ponto-ocorr", { type: "geojson", data: FC() });
 
       const corEstado = ["match", ["coalesce", ["feature-state", "estado"], "normal"],
         "critica", COR_REGIAO.critica, "atencao", COR_REGIAO.atencao, COR_REGIAO.normal] as unknown as string;
@@ -149,8 +157,16 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
         "icon-size": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 13, 0.75, 15, 1],
         "symbol-sort-key": ["case", ["to-boolean", ["get", "at"]], 1, 0],
       } });
+      m.addLayer({ id: "ocorr", type: "circle", source: "ocorr", paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, ["+", 2, ["get", "g"]], 15, ["+", 4, ["*", 2, ["get", "g"]]]],
+        "circle-color": COR_OCORRENCIA, "circle-opacity": ["case", ["==", ["get", "nova"], 1], 0.95, 0.55],
+        "circle-stroke-color": "#ffffff", "circle-stroke-width": 1,
+      } });
       m.addLayer({ id: "sel", type: "circle", source: "sel", paint: {
         "circle-radius": 19, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#ff4f00", "circle-stroke-width": 3,
+      } });
+      m.addLayer({ id: "ponto-ocorr", type: "circle", source: "ponto-ocorr", paint: {
+        "circle-radius": 11, "circle-color": "rgba(225,29,116,0.25)", "circle-stroke-color": COR_OCORRENCIA, "circle-stroke-width": 3,
       } });
       setPronto(true);
     });
@@ -176,16 +192,23 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
       m.easeTo({ center: (f.geometry as GeoJSON.Point).coordinates as [number, number], zoom: zoom + 0.3 });
     });
     m.on("click", "pontos", (e) => {
-      if (useTela.getState().desenhando) return;
+      if (useTela.getState().desenhando || useTela.getState().registrando) return;
       const p = e.features?.[0]?.properties as PropsEquip | undefined;
       if (p) useTela.getState().selecionar({ tipo: "equipamento", id: p.i });
     });
     m.on("click", "agentes", (e) => {
-      if (useTela.getState().desenhando) return;
+      if (useTela.getState().desenhando || useTela.getState().registrando) return;
       const p = e.features?.[0]?.properties as PropsAgente | undefined;
       if (p) useTela.getState().selecionar({ tipo: "agente", id: p.i });
     });
     const dica = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 14, className: "dica-mapa" });
+    m.on("mousemove", "ocorr", (e) => {
+      const p = e.features?.[0]?.properties;
+      if (!p) return;
+      const hora = new Date(p.t as string).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      dica.setLngLat(e.lngLat).setHTML(`<b>${p.nome}</b> · gravidade ${p.g} · ${hora}${p.d ? `<br>${p.d}` : ""}`).addTo(m);
+    });
+    m.on("mouseleave", "ocorr", () => dica.remove());
     for (const camada of ["pontos", "agentes", "grupos"]) {
       m.on("mouseenter", camada, () => { m.getCanvas().style.cursor = "pointer"; });
       m.on("mouseleave", camada, () => { m.getCanvas().style.cursor = ""; dica.remove(); });
@@ -348,6 +371,7 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
     vis("cobertura", camadas.cobertura);
     vis("cobertura-borda", camadas.cobertura);
     vis("agentes", camadas.agentes);
+    vis("ocorr", camadas.ocorrencias);
   }, [camadas, pronto]);
 
   // Área do filtro e desenho de uma nova área
@@ -390,6 +414,34 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
       setTimeout(() => m.doubleClickZoom.enable(), 300);
     };
   }, [desenhando, area, pronto, onArea]);
+
+  // Ocorrências da cidade (últimas 24 h); as da última hora ficam mais fortes
+  useEffect(() => {
+    const m = mapa.current;
+    if (!m || !pronto) return;
+    const hora = Date.now() - 3_600_000;
+    const feats = (ocorrencias ?? []).filter((o) => o.lon != null && o.lat != null).map((o) => ({
+      type: "Feature", geometry: { type: "Point", coordinates: [o.lon, o.lat] },
+      properties: { i: o.id, g: o.gravidade, nome: o.categoria_nome, t: o.inicio_em, d: o.descricao ?? "",
+                    nova: new Date(o.inicio_em).getTime() > hora ? 1 : 0 },
+    }));
+    (m.getSource("ocorr") as GeoJSONSource).setData(FC(feats));
+  }, [ocorrencias, pronto]);
+
+  // Registro de ocorrência: o próximo clique no mapa escolhe o ponto
+  useEffect(() => {
+    const m = mapa.current;
+    if (!m || !pronto) return;
+    const p = pontoOcorrencia;
+    (m.getSource("ponto-ocorr") as GeoJSONSource).setData(FC(p ? [{ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: p } }] : []));
+    if (!registrando) return;
+    m.getCanvas().style.cursor = "crosshair";
+    const clique = (e: maplibregl.MapMouseEvent) => useTela.getState().setPontoOcorrencia([e.lngLat.lng, e.lngLat.lat]);
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") useTela.getState().setRegistrando(false); };
+    m.on("click", clique);
+    window.addEventListener("keydown", tecla);
+    return () => { m.off("click", clique); window.removeEventListener("keydown", tecla); m.getCanvas().style.cursor = ""; };
+  }, [registrando, pontoOcorrencia, pronto]);
 
   // Voar até um ponto ou região
   useEffect(() => {

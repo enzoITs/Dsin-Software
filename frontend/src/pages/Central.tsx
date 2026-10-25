@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Minimize2, SlidersHorizontal } from "lucide-react";
 import { SeletorPerfil } from "../components/Layout";
 import {
-  useAlertasCentral, useCalor, useEstadoCentral, useIndicadores, useLinhaDoTempo, useRegioesGeo, useRegioesSaude,
+  useAlertasCentral, useCalor, useEstadoCentral, useIndicadores, useLinhaDoTempo, useOcorrenciasRecentes, useRegioesGeo,
+  useRegioesSaude,
 } from "../central/api";
 import Camadas from "../central/Camadas";
 import { useConexaoEventos } from "../central/eventos";
@@ -16,6 +17,7 @@ import LinhaTempo from "../central/LinhaTempo";
 import Mapa, { caixa } from "../central/Mapa";
 import PainelAlertas, { CardAlerta } from "../central/PainelAlertas";
 import Regioes from "../central/Regioes";
+import RegistrarOcorrencia from "../central/RegistrarOcorrencia";
 import { useTela } from "../central/store";
 import { COR_REGIAO, ROTULO_REGIAO } from "../central/visual";
 
@@ -63,12 +65,14 @@ export default function Central() {
   const camadas = useTela((s) => s.camadas);
   const minutos = useTela((s) => s.minutos);
   const linhaAberta = useTela((s) => s.linhaAberta);
+  const registrando = useTela((s) => s.registrando);
 
   const estado = useEstadoCentral(params, chave);
   const geo = useRegioesGeo();
   const ind = useIndicadores(params, chave, minutos === 0);
   const saude = useRegioesSaude(params, chave);
   const calor = useCalor(params, chave, camadas.calor);
+  const ocorrencias = useOcorrenciasRecentes(camadas.ocorrencias);
   const linha = useLinhaDoTempo(params, chave, linhaAberta ? minutos : 0);
   const passado = linhaAberta && minutos > 0 ? linha.data : undefined;
   const criticos = useAlertasCentral(params, chave, { nivel_alerta: ["critica", "alta"] }, 8);
@@ -127,6 +131,7 @@ export default function Central() {
           <Mapa
             estado={estado.data} semFiltro={total === 0} regioesGeo={geo.data} saude={saude.data} calor={calor.data}
             linha={passado} area={filtros.area} onArea={onArea} escuro={sala}
+            ocorrencias={camadas.ocorrencias && !passado ? ocorrencias.data?.itens : undefined}
           />
           {!sala && (
             <>
@@ -142,6 +147,7 @@ export default function Central() {
           {estado.isFetching && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-tinta px-2 py-1 text-[12px] text-papel">Carregando o mapa…</div>}
           {estado.isError && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 border border-critico bg-papel px-3 py-2 text-[13px]">Não foi possível carregar o mapa. A API está no ar?</div>}
           {!sala && <Ficha />}
+          {!sala && registrando && <RegistrarOcorrencia />}
           {!sala && linhaAberta && <LinhaTempo dados={linha.data} carregando={linha.isFetching} />}
           {passado && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-acento px-3 py-1 text-[12px] font-semibold text-white">Vendo o passado: há {minutos} min</div>}
         </main>

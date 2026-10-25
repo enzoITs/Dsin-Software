@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FileText, History, Loader2, MessageSquare, Monitor, RotateCcw, Siren, Volume2, VolumeX } from "lucide-react";
+import { FileText, History, Loader2, MapPinPlus, MessageSquare, Monitor, RotateCcw, Siren, Volume2, VolumeX } from "lucide-react";
 import { ApiError } from "../api/client";
 import { usePerguntar, useRestaurar, useResumoTurno, useSimular } from "./api";
 import { liberarSom } from "./som";
@@ -170,8 +170,12 @@ export default function Ferramentas() {
   const [, setSp] = useSearchParams();
   const som = useTela((s) => s.som);
   const linhaAberta = useTela((s) => s.linhaAberta);
+  const registrando = useTela((s) => s.registrando);
   return (
     <div className="flex flex-wrap items-center gap-[6px]">
+      <Botao ativo={registrando} onClick={() => useTela.getState().setRegistrando(!registrando)} title="Clique no mapa, escolha a categoria e a gravidade">
+        <MapPinPlus size={14} />Registrar ocorrência
+      </Botao>
       <Simular />
       <Resumo />
       <Perguntar />

@@ -13,7 +13,7 @@ from app import jobs
 from app.config import settings
 from app.domain.estados import RegraViolada
 from app.services import ia as ia_servico
-from app.routers import agentes, alertas, central, equipamentos, ia, operacao, simulador, tipos
+from app.routers import agentes, alertas, central, equipamentos, ia, operacao, preditivo, simulador, tipos
 from app.services.barramento import barramento
 
 logging.basicConfig(level=logging.INFO)
@@ -30,11 +30,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Atalaia — Inventário e Central de Operações",
-    version="0.2.0",
+    title="Atalaia — Inventário, Central de Operações e Cidade Preditiva",
+    version="0.3.0",
     description=(
         "API única do Atalaia. Parte 1: inventário (painel web, modo campo). Parte 2: central de operações "
         "(motor de interpretação, alertas priorizados, regiões, tempo real em /ws/eventos). "
+        "Parte 3: cidade preditiva (ocorrências, calendário, clima, eventos, previsões explicadas). "
         "O PROMETHEUS consome os mesmos endpoints."
     ),
     lifespan=lifespan,
@@ -63,7 +64,7 @@ async def validacao(_: Request, exc: RequestValidationError):
 
 
 for r in (equipamentos.router, tipos.router, agentes.router, operacao.router, alertas.router, central.router,
-          simulador.router, ia.router):
+          simulador.router, ia.router, preditivo.router):
     app.include_router(r)
 
 

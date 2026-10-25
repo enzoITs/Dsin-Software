@@ -85,3 +85,30 @@ class EstadoAlerta(str, enum.Enum):
     reconhecido = "reconhecido"
     em_atendimento = "em_atendimento"
     resolvido = "resolvido"
+
+
+# ---------- Parte 3: Cidade Preditiva ----------
+
+
+class OrigemOcorrencia(str, enum.Enum):
+    simulada = "simulada"        # gerador de histórico
+    central = "central"          # registrada pelo operador na central
+    equipamento = "equipamento"  # derivada de alerta (furto, incidente correlacionado)
+    externa = "externa"          # outro sistema (PROMETHEUS, 156...)
+
+
+class TipoEvento(str, enum.Enum):
+    show = "show"
+    jogo = "jogo"
+    feira = "feira"
+    manifestacao = "manifestacao"
+    obra = "obra"
+    outro = "outro"
+
+
+class EstadoRecomendacao(str, enum.Enum):
+    pendente = "pendente"
+    aceita = "aceita"
+    ajustada = "ajustada"
+    rejeitada = "rejeitada"
+    expirada = "expirada"

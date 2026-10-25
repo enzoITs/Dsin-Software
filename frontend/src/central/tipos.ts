@@ -76,4 +76,14 @@ export type Evento =
   | { tipo: "equipamentos"; feicoes: Feicao<PropsEquip>[]; removidos: number[] }
   | { tipo: "posicoes"; equipamentos?: [number, number, number][]; agentes?: [number, number, number][] }
   | { tipo: "agentes"; ids: number[] }
-  | { tipo: "recarregar"; motivo: string };
+  | { tipo: "recarregar"; motivo: string }
+  | { tipo: "ocorrencia"; acao: "nova"; ocorrencia: Ocorrencia };
+
+/** Ocorrência da cidade (Parte 3): registrada na central, derivada de alerta ou simulada. */
+export interface Ocorrencia {
+  id: number; categoria: string; categoria_nome: string; gravidade: number; inicio_em: string; fim_em: string | null;
+  lon: number | null; lat: number | null; regiao: string | null; bairro: string | null;
+  origem: "simulada" | "central" | "equipamento" | "externa"; equipamento_id: number | null; alerta_id: number | null;
+  agentes_presentes_regiao: number | null; descricao: string | null; registrado_por: string | null;
+}
+export interface CategoriaOcorrencia { codigo: string; nome: string; descricao: string | null; gravidade_padrao: number }

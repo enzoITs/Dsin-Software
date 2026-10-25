@@ -63,6 +63,8 @@ export function useConexaoEventos() {
             }
           } else if (ev.tipo === "agentes") {
             mudouAlerta = true;
+          } else if (ev.tipo === "ocorrencia") {
+            qc.invalidateQueries({ queryKey: ["central", "ocorrencias"] });
           } else if (ev.tipo === "recarregar") {
             qc.invalidateQueries({ queryKey: ["central"] });
           }

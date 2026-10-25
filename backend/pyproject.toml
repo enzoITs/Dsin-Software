@@ -21,6 +21,15 @@ dependencies = [
   "redis>=5.0",
   "tzdata>=2024.1",
   "pytest>=8",
+  # Parte 3: previsão
+  "holidays>=0.58",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scikit-learn>=1.5",
+  "lightgbm>=4.5",
+  "statsmodels>=0.14",
+  "shap>=0.46",
+  "joblib>=1.4",
 ]
 
 [tool.pytest.ini_options]

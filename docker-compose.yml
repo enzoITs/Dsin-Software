@@ -36,7 +36,7 @@ services:
       redis:
         condition: service_started
     restart: on-failure
-    command: sh -c "python -m scripts.esperar_banco && alembic upgrade head && python -m scripts.seed --se-vazio && python -m scripts.preparar_central && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: sh -c "python -m scripts.esperar_banco && alembic upgrade head && python -m scripts.seed --se-vazio && python -m scripts.preparar_central && python -m scripts.preparar_preditivo && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   simulador:
     build: ./backend

@@ -11,6 +11,7 @@ const CAMADAS: [Camada, string, string][] = [
   ["regioes", "Regiões", "Contorno pintado pelo estado"],
   ["calor", "Mapa de calor de alertas", "Concentração nas últimas 24 horas"],
   ["cobertura", "Cobertura de câmeras", "Alcance das operacionais; o que fica em branco é ponto cego"],
+  ["ocorrencias", "Ocorrências (24 h)", "Acidentes, alagamentos, furtos...; quanto maior, mais grave"],
 ];
 
 /** Camadas (liga e desliga) e legenda: forma = o que é, cor = como está. */

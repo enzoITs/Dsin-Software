@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
 import type {
-  AgenteProximo, AlertaC, EstadoCentral, Fila, Indicadores, LinhaDoTempo, ListaAlertas, RegiaoSaude,
+  AgenteProximo, AlertaC, CategoriaOcorrencia, Ocorrencia, EstadoCentral, Fila, Indicadores, LinhaDoTempo, ListaAlertas, RegiaoSaude,
 } from "./tipos";
 
 type P = Record<string, string | number | boolean | (string | number)[] | undefined>;
@@ -141,5 +141,27 @@ export function usePerguntar() {
   return useMutation({
     mutationFn: (q: string) =>
       api<{ texto: string; fonte: string; regiao: string | null; alertas: AlertaC[] }>("/central/perguntar", { params: { q } }),
+  });
+}
+
+// ---------- Parte 3: ocorrências da cidade ----------
+
+export const useCategoriasOcorrencia = (ativo = true) =>
+  useQuery({ queryKey: ["ocorrencias", "categorias"], enabled: ativo, queryFn: () => api<CategoriaOcorrencia[]>("/ocorrencias/categorias"), staleTime: Infinity });
+
+/** Ocorrências das últimas 24 h, para a camada do mapa. O WebSocket avisa das novas. */
+export const useOcorrenciasRecentes = (ativo: boolean) =>
+  useQuery({
+    queryKey: ["central", "ocorrencias"], enabled: ativo, refetchInterval: 120_000,
+    queryFn: () => api<{ itens: Ocorrencia[]; total: number }>("/ocorrencias", { params: { horas: 24, limite: 2000 } }),
+    placeholderData: keepPreviousData,
+  });
+
+export function useRegistrarOcorrencia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { categoria: string; gravidade: number; lon: number; lat: number; descricao?: string }) =>
+      api<Ocorrencia>("/ocorrencias", { method: "POST", body: b }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["central", "ocorrencias"] }),
   });
 }
