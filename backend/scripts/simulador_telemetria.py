@@ -12,7 +12,12 @@ Não envia nada para os "parados" (lista em simulador_parados.json, controlada p
 nem para os "mudos" (1% dos módulos com defeito fixo, sempre os mesmos). Parados e mudos,
 passado 3 vezes o intervalo do tipo, viram alerta de "possível falha silenciosa".
 
-Com --eventos, também gera de vez em quando falhas e furtos pela própria API.
+Com --eventos, também gera de vez em quando falhas e furtos aleatórios pela própria API.
+
+Modo contínuo da Parte 3 (ligado por padrão; --sem-continuo desliga): a cada `--continuo`
+segundos gera as ocorrências e as séries das horas que passaram, com os mesmos padrões do
+histórico, e uma vez por hora aplica pela API as falhas, furtos e consertos sorteados pelos
+mesmos padrões. Assim as previsões de ontem podem ser conferidas com o que "aconteceu".
 """
 
 import argparse
@@ -27,6 +32,7 @@ import httpx
 from sqlalchemy import func, select
 
 from app.db import SessionLocal
+from app.preditivo import historico
 from app.models import Agente, Equipamento, Localizacao, TipoEquipamento
 from app.models.enums import Situacao, SituacaoAgente
 
@@ -167,6 +173,30 @@ def evento_aleatorio(cliente: httpx.Client, cidade: Cidade) -> str:
     return f"; evento {cod} -> {nova} ({r.status_code})"
 
 
+def ciclo_continuo(cliente: httpx.Client, ultima_hora: list) -> str:
+    """Avança o histórico da cidade e, uma vez por hora, mexe nos equipamentos pela API."""
+    with SessionLocal() as db:
+        res = historico.avancar(db, log=lambda m: print(m, flush=True))
+        hora = historico.ultima_hora_gerada(db)
+        acoes = []
+        if hora is not None and hora != ultima_hora[0]:
+            acoes = historico.acoes_equipamentos(db)
+            ultima_hora[0] = hora
+    feitas = 0
+    cab = {"X-Usuario": historico.USUARIO}
+    for a in acoes:
+        if a["situacao"] == "operacional":
+            r = cliente.post(f"/equipamentos/{a['id']}/registros-manutencao", headers=cab,
+                             json={"tecnico": "Equipe de manutenção", "descricao": "Manutenção corretiva", "resultado": "concluida"})
+        else:
+            r = cliente.patch(f"/equipamentos/{a['id']}/situacao", headers=cab,
+                              json={"situacao": a["situacao"], "motivo": a["motivo"]})
+        feitas += r.status_code < 300
+    if not res and not acoes:
+        return ""
+    return f"; contínuo: {res.get('ocorrencias', 0)} ocorrências, {feitas}/{len(acoes)} mudanças em equipamentos"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--api", default="http://localhost:8000")
@@ -174,9 +204,12 @@ def main() -> None:
     ap.add_argument("--posicao", type=int, default=15, help="segundos entre posições de móveis e agentes")
     ap.add_argument("--eventos", action="store_true", help="gera falhas e furtos de vez em quando")
     ap.add_argument("--mudos", type=float, default=0.01, help="fração de módulos que nunca mandam sinal")
+    ap.add_argument("--continuo", type=int, default=300, help="segundos entre passos do modo contínuo da Parte 3")
+    ap.add_argument("--sem-continuo", action="store_true", help="desliga o modo contínuo da Parte 3")
     args = ap.parse_args()
     cidade = Cidade()
-    ultimo_presenca = ultimo_carga = 0.0
+    ultimo_presenca = ultimo_carga = ultimo_continuo = 0.0
+    ultima_hora: list = [None]
     with httpx.Client(base_url=args.api, timeout=60) as cliente:
         while True:
             inicio = time.time()
@@ -192,6 +225,9 @@ def main() -> None:
                     ultimo_presenca = inicio
                     if args.eventos:
                         msg += evento_aleatorio(cliente, cidade)
+                if not args.sem_continuo and inicio - ultimo_continuo >= args.continuo:
+                    msg += ciclo_continuo(cliente, ultima_hora)
+                    ultimo_continuo = inicio
                 print(f"[simulador] {msg} em {time.time() - inicio:.1f}s; {len(fora)} parados", flush=True)
             except httpx.HTTPError as exc:
                 print(f"[simulador] API indisponível ({exc}); tentando de novo", flush=True)

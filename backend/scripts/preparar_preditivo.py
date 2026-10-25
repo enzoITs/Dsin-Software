@@ -2,15 +2,16 @@
 
 Uso: python -m scripts.preparar_preditivo
 
-Idempotente: grava o calendário (2 anos para trás e 1 para a frente) e a previsão de clima
-das próximas 72 horas onde ainda não houver.
+Idempotente: na primeira vez gera o histórico sintético da cidade (ocorrências, eventos, escala,
+clima e séries, com padrões plantados); depois só avança o modo contínuo até a hora atual. Também
+grava o calendário (2 anos para trás e 1 para a frente) e a previsão de clima das próximas 72 horas.
 """
 
 import time
 from datetime import datetime, timedelta, timezone
 
 from app.db import SessionLocal
-from app.preditivo import calendario, clima
+from app.preditivo import calendario, clima, historico
 from app.routers.preditivo import cidade_principal
 
 
@@ -19,6 +20,8 @@ def preparar() -> None:
     agora = datetime.now(timezone.utc)
     hoje = agora.astimezone(clima.FUSO).date()
     with SessionLocal() as db:
+        historico.gerar(db)
+        historico.avancar(db)
         n_cal = calendario.garantir(db, hoje - timedelta(days=730), hoje + timedelta(days=365))
         n_clima = clima.garantir_previsao(db, cidade_principal(db), agora, 72)
         db.commit()

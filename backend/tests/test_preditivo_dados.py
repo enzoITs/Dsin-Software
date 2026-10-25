@@ -30,7 +30,8 @@ def test_migracao_0003_sobe_e_desce(banco):
     cfg = Config(os.path.join(raiz, "alembic.ini"))
     cfg.set_main_option("script_location", os.path.join(raiz, "alembic"))
     novas = {"ocorrencia", "categoria_ocorrencia", "calendario", "clima_hora", "evento_cidade", "escala_agente",
-             "previsao", "recomendacao", "modelo_versao", "backtest_resultado", "estado_preditivo"}
+             "previsao", "recomendacao", "modelo_versao", "backtest_resultado", "estado_preditivo",
+             "serie_equipamento_hora"}
     eng = create_engine(url)
     try:
         def migrar(acao, alvo):

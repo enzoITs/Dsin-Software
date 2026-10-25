@@ -14,7 +14,7 @@ cp .env.example .env        # opcional: coloque ANTHROPIC_API_KEY para ligar a I
 docker compose up --build   # ou: podman compose up --build
 ```
 
-Na primeira subida o banco é criado, o seed gera 20 mil equipamentos com meses de histórico e a central faz a linha de base (cerca de 40 s no total).
+Na primeira subida o banco é criado, o seed gera 20 mil equipamentos com anos de histórico, a central faz a linha de base e o gerador da Parte 3 cria 18 meses de história da cidade com padrões plantados (cerca de 1 min 30 s no total).
 
 | Endereço | O que é |
 |---|---|
@@ -49,6 +49,21 @@ Não há login. O seletor no topo escolhe o perfil, enviado à API em cabeçalho
 - **Operador do órgão** cadastra e edita só o próprio órgão; na central, age só em alertas do próprio órgão.
 - **Técnico** usa o modo campo do próprio órgão.
 - **PROMETHEUS** consome a API sem cabeçalhos (leitura total) e recebe eventos por webhook.
+
+---
+
+## Parte 3 — Cidade Preditiva (em construção)
+
+Plano e andamento: [docs/parte3/00-reconhecimento.md](docs/parte3/00-reconhecimento.md), decisões em [docs/parte3/decisoes.md](docs/parte3/decisoes.md).
+
+**Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 160 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, descritos em [docs/parte3/padroes-plantados.md](docs/parte3/padroes-plantados.md). Os modelos não leem essa descrição: precisam redescobrir os padrões.
+
+```bash
+podman compose exec api python -m scripts.verificar_padroes        # confere cada padrão com consultas diretas
+podman compose exec api python -m scripts.gerar_historico --forcar # refaz o histórico da cidade (mesmos dados)
+```
+
+Mesma semente e mesma data de referência geram os mesmos dados. Depois da subida, o `simulador` continua a história no modo contínuo: a cada 5 minutos gera as ocorrências das horas que passaram, com os mesmos padrões e o clima gravado no banco (inclusive o editado pelo operador), e uma vez por hora aplica pela API falhas, furtos e consertos sorteados pelos mesmos padrões.
 
 ---
 
@@ -211,7 +226,8 @@ O documento da Parte 2 deixou algumas escolhas para a implementação. As decis�
 # Backend (com o banco do compose em pé: docker compose up -d db)
 cd backend
 uv venv -p 3.12 .venv && uv pip install -p .venv -r pyproject.toml
-.venv/bin/alembic upgrade head && .venv/bin/python -m scripts.seed && .venv/bin/python -m scripts.preparar_central
+.venv/bin/alembic upgrade head && .venv/bin/python -m scripts.seed && .venv/bin/python -m scripts.preparar_central \
+  && .venv/bin/python -m scripts.preparar_preditivo
 .venv/bin/uvicorn app.main:app --reload
 .venv/bin/python -m scripts.simulador_telemetria          # em outro terminal
 
@@ -229,9 +245,10 @@ Estrutura:
 - `backend/app/domain`: regras puras (estados, disponibilidade, saúde, silêncio, qualidade, **regras e limites do motor**).
 - `backend/app/services`: **motor** de interpretação, consultas da **central**, **barramento** de eventos, **simulação** e **resumo**.
 - `backend/app/routers`: a API (`central.py` e `alertas.py` são da Parte 2).
-- `backend/scripts`: seed, preparação da central e simulador.
+- `backend/scripts`: seed, preparação da central e da Parte 3, gerador de histórico, verificação dos padrões e simulador.
+- `backend/app/preditivo`: Parte 3 (calendário, clima, padrões plantados, geradores, modo contínuo).
 - `frontend/src/pages/Central.tsx` e `frontend/src/central/`: a tela da central (mapa, painéis, WebSocket).
 
-Testes: 112 no backend (73 da Parte 1, 39 da Parte 2: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação) e 13 no frontend.
+Testes: 138 no backend (73 da Parte 1, 39 da Parte 2, 26 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador e cada padrão plantado conferido por consulta) e 13 no frontend.
 
 Como a IA foi usada no desenvolvimento e nos recursos do sistema: [docs/uso-de-ia.md](docs/uso-de-ia.md).

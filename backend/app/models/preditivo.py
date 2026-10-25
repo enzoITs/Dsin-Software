@@ -200,3 +200,17 @@ class EstadoPreditivo(Base):
     chave: Mapped[str] = mapped_column(String(60), primary_key=True)
     valor: Mapped[Any] = mapped_column(JSONB)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class SerieEquipamentoHora(Base):
+    """Séries por hora de um subconjunto de equipamentos (infrações por radar, minutos online por câmera).
+
+    Base do detector de anomalias (P5). Só algumas centenas de equipamentos, para não explodir o volume.
+    """
+
+    __tablename__ = "serie_equipamento_hora"
+    __table_args__ = (Index("ix_serie_metrica_em", "metrica", "em"),)
+    equipamento_id: Mapped[int] = mapped_column(ForeignKey("equipamento.id", ondelete="CASCADE"), primary_key=True)
+    metrica: Mapped[str] = mapped_column(String(30), primary_key=True)  # infracoes, online_min
+    em: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    valor: Mapped[float] = mapped_column(Float)
