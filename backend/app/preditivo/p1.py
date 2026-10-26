@@ -133,7 +133,9 @@ def avaliar(f: V.Fontes, df: pd.DataFrame, fim: date, cfg: dict, janela: int, lo
         por_corte.append({"data_corte": d, "auc": m["auc"], "brier": m["brier"], "precisao_50": m["precisao_50"],
                           "auc_baseline": mb["auc"], "brier_baseline": mb["brier"], "precisao_50_baseline": mb["precisao_50"],
                           "taxa_base": m["taxa_base"], "n": m["n"]})
-        log(f"[P1 {janela}d] corte {d}: AUC {m['auc']:.3f} (baseline {mb['auc']:.3f})")
+        def f3(v):
+            return "—" if v is None else f"{v:.3f}"  # semana sem nenhuma falha: AUC indefinida
+        log(f"[P1 {janela}d] corte {d}: AUC {f3(m['auc'])} (baseline {f3(mb['auc'])})")
     todos = pd.concat(previsto, ignore_index=True)
     geral = avaliacao.classificacao(todos.y, todos.p, todos.corte)
     return {
