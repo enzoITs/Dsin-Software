@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
-import type { Amanha, Cartao, DetalheRegiao, Plano, Ranking, Recomendacao } from "./tipos";
+import type { Acertometro, Amanha, Cartao, DetalheRegiao, EstadoTreino, Modelos, Plano, Ranking, Recomendacao } from "./tipos";
 
 export const useAmanha = () =>
   useQuery({ queryKey: ["prev", "amanha"], queryFn: () => api<Amanha>("/amanha"), refetchInterval: 5 * 60_000, retry: false });
@@ -79,5 +79,25 @@ export function useEditarClima() {
     mutationFn: (body: { inicio: string; fim: string; chuva_mm?: number; temperatura_c?: number; alerta_tempestade?: boolean }) =>
       api<{ horas_alteradas: number }>("/clima/previsao", { method: "PUT", body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["prev", "amanha"] }),
+  });
+}
+
+export const useTreino = () =>
+  useQuery({
+    queryKey: ["prev", "treino"], queryFn: () => api<EstadoTreino>("/modelos/treino"), retry: false,
+    refetchInterval: (q) => (q.state.data?.situacao === "rodando" ? 3_000 : 60_000),
+  });
+
+export const useModelos = () => useQuery({ queryKey: ["prev", "modelos"], queryFn: () => api<Modelos>("/modelos") });
+
+export const useAcertometro = (dias: number) =>
+  useQuery({ queryKey: ["prev", "acertometro", dias], queryFn: () => api<Acertometro>("/modelos/acertometro", { params: { dias } }),
+             refetchInterval: 10 * 60_000 });
+
+export function useTreinar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<EstadoTreino>("/modelos/treinar", { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev", "treino"] }),
   });
 }

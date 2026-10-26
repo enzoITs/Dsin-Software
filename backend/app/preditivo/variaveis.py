@@ -116,6 +116,13 @@ def _contar(df: pd.DataFrame, desde: pd.Timestamp, ate: pd.Timestamp) -> pd.Seri
     return x.groupby("equipamento_id").size()
 
 
+def _mapear_data(ids: pd.Series, datas: pd.Series) -> pd.Series:
+    """`ids.map(datas)` que também funciona quando `datas` está vazia (o pandas falha ao mapear datas vazias)."""
+    if datas.empty:
+        return pd.Series(pd.NaT, index=ids.index, dtype="datetime64[ns, UTC]")
+    return ids.map(datas)
+
+
 def equipamentos(f: Fontes, cortes: list[pd.Timestamp], alvo: bool = True) -> pd.DataFrame:
     """Uma linha por equipamento em operação em cada corte, com as variáveis e (se alvo) o que aconteceu depois.
 
@@ -141,11 +148,11 @@ def equipamentos(f: Fontes, cortes: list[pd.Timestamp], alvo: bool = True) -> pd
             x[f"falhas_{w}d"] = x.id.map(_contar(falhas, corte - pd.Timedelta(days=w), corte)).fillna(0)
         ult_man = f.registros[f.registros.em < corte].groupby("equipamento_id").em.max()
         ult_prev = prev[prev.em < corte].groupby("equipamento_id").em.max()
-        x["dias_desde_manutencao"] = (corte - x.id.map(ult_man)).dt.days
-        x["dias_desde_preventiva"] = (corte - x.id.map(ult_prev)).dt.days
+        x["dias_desde_manutencao"] = (corte - _mapear_data(x.id, ult_man)).dt.days
+        x["dias_desde_preventiva"] = (corte - _mapear_data(x.id, ult_prev)).dt.days
         x["atraso_preventiva"] = x.dias_desde_preventiva - x.periodicidade
         ult_falha = falhas[falhas.em < corte].groupby("equipamento_id").em.max()
-        x["dias_desde_falha"] = (corte - x.id.map(ult_falha)).dt.days
+        x["dias_desde_falha"] = (corte - _mapear_data(x.id, ult_falha)).dt.days
 
         # Clima: passado observado e próximos 7 dias previstos
         d0 = corte.date()

@@ -77,3 +77,39 @@ export interface Plano {
   origem: string; periodos: PeriodoPlano[]; nao_coberto_antes: number; nao_coberto_depois: number; reducao_pct: number | null;
   unidade: string; recomendacoes: Recomendacao[]; gravado?: { previsoes: number; recomendacoes: number } | null;
 }
+
+/** Confiança dos modelos (Q1) */
+export interface EstadoTreino {
+  situacao: "nunca" | "rodando" | "pronto" | "erro" | "interrompido"; etapa?: string; mensagem?: string | null;
+  inicio?: string; atualizado_em?: string; segundos?: number; tem_modelo: boolean; rodando_aqui: boolean;
+}
+
+export interface ModeloAvaliado {
+  modulo: string; nome: string; titulo: string; o_que_preve: string; metodo: string; versao: string; treinado_em: string;
+  treino_inicio: string | null; treino_fim: string | null; selo: Selo;
+  metricas: Record<string, number | Record<string, number>>; baseline: Record<string, number | Record<string, number>>;
+  logistica: { auc: number; brier: number; precisao_50: number } | null;
+  calibracao: { n: number; prevista: number; observada: number }[] | null;
+  calibracao_baseline: { n: number; prevista: number; observada: number }[] | null;
+  importancia: { grupo: string; nome: string; peso: number }[];
+  backtest: ({ data_corte: string; modelo: number; baseline: number } & Record<string, number | string | null>)[];
+}
+
+export interface Modelos {
+  modelos: ModeloAvaliado[]; derivados: { modulo: string; titulo: string; texto: string }[]; avaliacao: string;
+  treino: EstadoTreino; dados_sinteticos: boolean;
+}
+
+export interface MetricasConferidas {
+  n: number; mae: number; mae_baseline: number; ganho_pct: number | null; cobertura_intervalo: number; real_medio: number;
+}
+
+export interface Acertometro {
+  gerado_em: string; dias: number;
+  P2: { conferidas: number; geral?: MetricasConferidas; por_antecedencia?: ({ faixa: string } & MetricasConferidas)[];
+        por_dia?: ({ dia: string } & MetricasConferidas)[]; por_regiao?: ({ regiao: string } & MetricasConferidas)[];
+        serie_48h?: { em: string; previsto: number; real: number; baseline: number }[] };
+  P1: { top: number; lotes: { inicio: string; fim: string; encerrado: boolean; decorrido_pct: number; equipamentos: number;
+        apontados: number; falharam_apontados: number; esperado_apontados: number; taxa_apontados: number; taxa_geral: number;
+        falharam_total: number }[] };
+}

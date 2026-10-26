@@ -5,9 +5,10 @@ import circle from "@turf/circle";
 import { ouvirEventos } from "./eventos";
 import { instalarIcones } from "./icones";
 import { useTela } from "./store";
-import type { EstadoCentral, Feicao, LinhaDoTempo, Ocorrencia, PropsAgente, PropsEquip, RegiaoSaude } from "./tipos";
+import type { EstadoCentral, Feicao, LinhaDoTempo, Ocorrencia, PropsAgente, PropsEquip, RegiaoSaude, RiscoPrevisto } from "./tipos";
 import { COR_REGIAO, RANK_NIVEL, gravidade } from "./visual";
 import { SITUACAO } from "../lib/rotulos";
+import { COR_NIVEL as COR_RISCO } from "../preditivo/formato";
 
 const CENTRO: [number, number] = [-46.62, -23.565];
 const TRILHA_MAX = 8; // últimas posições (15 s cada): uns 2 minutos de rastro
@@ -43,12 +44,14 @@ interface Props {
   escuro?: boolean;
   alcanceCameraM?: number;
   ocorrencias?: Ocorrencia[];
+  /** Parte 3: camada "Risco previsto (próximas 6 h)" */
+  riscoPrevisto?: RiscoPrevisto;
 }
 
 /** Cor das ocorrências da cidade: rosa, distinta da situação dos equipamentos e da cor dos órgãos. */
 export const COR_OCORRENCIA = "#e11d74";
 
-export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linha, area, onArea, escuro = false, alcanceCameraM = 120, ocorrencias }: Props) {
+export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linha, area, onArea, escuro = false, alcanceCameraM = 120, ocorrencias, riscoPrevisto }: Props) {
   const div = useRef<HTMLDivElement>(null);
   const mapa = useRef<maplibregl.Map | null>(null);
   const [pronto, setPronto] = useState(false);
@@ -112,6 +115,7 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
       m.addSource("sel", { type: "geojson", data: FC() });
       m.addSource("ocorr", { type: "geojson", data: FC() });
       m.addSource("ponto-ocorr", { type: "geojson", data: FC() });
+      m.addSource("risco", { type: "geojson", data: FC() });
 
       const corEstado = ["match", ["coalesce", ["feature-state", "estado"], "normal"],
         "critica", COR_REGIAO.critica, "atencao", COR_REGIAO.atencao, COR_REGIAO.normal] as unknown as string;
@@ -122,6 +126,16 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
       m.addLayer({ id: "regioes-line", type: "line", source: "regioes", paint: {
         "line-color": corEstado, "line-width": ["match", ["coalesce", ["feature-state", "estado"], "normal"], "normal", 1.2, 2.6] as unknown as number,
         "line-opacity": 0.9,
+      } });
+      // Risco previsto: hachura leve e contorno tracejado, para não confundir com o estado atual da região
+      const corRisco = ["match", ["get", "nivel"], "MUITO_ALTO", COR_RISCO.MUITO_ALTO, "ALTO", COR_RISCO.ALTO,
+        "MODERADO", COR_RISCO.MODERADO, COR_RISCO.BAIXO] as unknown as string;
+      m.addLayer({ id: "risco-fill", type: "fill", source: "risco", layout: { visibility: "none" }, paint: {
+        "fill-color": corRisco,
+        "fill-opacity": ["match", ["get", "nivel"], "MUITO_ALTO", 0.32, "ALTO", 0.24, "MODERADO", 0.12, 0.05] as unknown as number,
+      } });
+      m.addLayer({ id: "risco-line", type: "line", source: "risco", layout: { visibility: "none" }, paint: {
+        "line-color": corRisco, "line-width": 2.4, "line-dasharray": [3, 2],
       } });
       m.addLayer({ id: "calor", type: "heatmap", source: "calor", maxzoom: 16, paint: {
         "heatmap-weight": ["get", "w"], "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 15, 2.2],
@@ -209,6 +223,21 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
       dica.setLngLat(e.lngLat).setHTML(`<b>${p.nome}</b> · gravidade ${p.g} · ${hora}${p.d ? `<br>${p.d}` : ""}`).addTo(m);
     });
     m.on("mouseleave", "ocorr", () => dica.remove());
+    m.on("mousemove", "risco-fill", (e) => {
+      if (m.queryRenderedFeatures(e.point, { layers: ["pontos", "agentes", "grupos", "ocorr"] }).length) return;
+      const p = e.features?.[0]?.properties;
+      if (!p) return;
+      const hora = new Date(p.pico as string).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      dica.setLngLat(e.lngLat).setHTML(`<b>${p.regiao}</b> · risco previsto ${String(p.nivel_nome).toLowerCase()} (${p.indice}) às ${hora}${p.motivo ? `<br>${p.motivo}` : ""}<br><i>Clique para ver a previsão</i>`).addTo(m);
+    });
+    m.on("mouseleave", "risco-fill", () => dica.remove());
+    m.on("click", "risco-fill", (e) => {
+      const st = useTela.getState();
+      if (st.desenhando || st.registrando) return;
+      if (m.queryRenderedFeatures(e.point, { layers: ["pontos", "agentes", "grupos"] }).length) return;
+      const p = e.features?.[0]?.properties;
+      if (p) st.abrirCartao(Number(p.previsao_id));
+    });
     for (const camada of ["pontos", "agentes", "grupos"]) {
       m.on("mouseenter", camada, () => { m.getCanvas().style.cursor = "pointer"; });
       m.on("mouseleave", camada, () => { m.getCanvas().style.cursor = ""; dica.remove(); });
@@ -372,7 +401,21 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
     vis("cobertura-borda", camadas.cobertura);
     vis("agentes", camadas.agentes);
     vis("ocorr", camadas.ocorrencias);
+    vis("risco-fill", camadas.risco);
+    vis("risco-line", camadas.risco);
   }, [camadas, pronto]);
+
+  // Risco previsto nas próximas 6 h (P3)
+  useEffect(() => {
+    const m = mapa.current;
+    if (!m || !pronto) return;
+    const feats = (riscoPrevisto?.regioes ?? []).map((r) => ({
+      type: "Feature", geometry: r.geometria,
+      properties: { previsao_id: r.previsao_id, regiao: r.regiao, nivel: r.nivel, nivel_nome: r.nivel_nome, indice: Math.round(r.indice),
+                    pico: r.pico_em, motivo: r.motivo ?? "" },
+    }));
+    (m.getSource("risco") as GeoJSONSource).setData(FC(feats));
+  }, [riscoPrevisto, pronto]);
 
   // Área do filtro e desenho de uma nova área
   useEffect(() => {

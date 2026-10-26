@@ -8,6 +8,7 @@ import { Botao, Carregando } from "../components/ui";
 import { useRegioesGeo } from "../central/api";
 import CartaoPrevisao, { SeloNivel } from "../preditivo/CartaoPrevisao";
 import MapaRisco from "../preditivo/MapaRisco";
+import AvisoTreino from "../preditivo/AvisoTreino";
 import { useAmanha, useCartoes, useDetalheRegiao, useEditarClima, useRecalcularPrevisoes } from "../preditivo/api";
 import { COR_NIVEL, dia, num } from "../preditivo/formato";
 import type { Amanha as TAmanha } from "../preditivo/tipos";
@@ -151,6 +152,7 @@ export default function Amanha() {
     return (
       <div className="p-8">
         <h1 className="text-[22px] font-bold">Amanhã</h1>
+        <div className="mt-3 max-w-[720px]"><AvisoTreino /></div>
         <p className="mt-2">{d.error instanceof ApiError ? d.error.erro.mensagem : "Não foi possível carregar as previsões."}</p>
         <Link to="/central" className="mt-4 inline-block underline">Voltar à central</Link>
       </div>
@@ -170,9 +172,11 @@ export default function Amanha() {
           <Link to="/central" className="underline">Central</Link>
           <Link to="/previsao/equipamentos" className="underline">Equipamentos em risco</Link>
           <Link to="/previsao/equipes" className="underline">Planejamento de equipes</Link>
+          <Link to="/previsao/confianca" className="underline">Confiança dos modelos</Link>
         </nav>
         <SeletorPerfil />
       </header>
+      <AvisoTreino />
       <Contexto d={dados} />
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">

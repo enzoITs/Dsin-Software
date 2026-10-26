@@ -7,7 +7,7 @@ export type Selecao =
   | { tipo: "agente"; id: number }
   | { tipo: "alerta"; id: number };
 
-export type Camada = "fixos" | "moveis" | "agentes" | "regioes" | "calor" | "cobertura" | "ocorrencias";
+export type Camada = "fixos" | "moveis" | "agentes" | "regioes" | "calor" | "cobertura" | "ocorrencias" | "risco";
 
 export interface Voo { lon?: number; lat?: number; zoom?: number; bbox?: [number, number, number, number]; t: number }
 
@@ -37,6 +37,9 @@ interface EstadoTela {
   setConexao: (c: "conectando" | "ao_vivo" | "caiu") => void;
   ultimoEvento: number;
   marcarEvento: () => void;
+  /** Parte 3: Cartão de Previsão aberto na gaveta (id numérico da previsão). */
+  cartao: number | null;
+  abrirCartao: (id: number | null) => void;
 }
 
 function lerSom() {
@@ -46,7 +49,7 @@ function lerSom() {
 export const useTela = create<EstadoTela>((set) => ({
   selecao: null,
   selecionar: (selecao) => set({ selecao }),
-  camadas: { fixos: true, moveis: true, agentes: true, regioes: true, calor: false, cobertura: false, ocorrencias: true },
+  camadas: { fixos: true, moveis: true, agentes: true, regioes: true, calor: false, cobertura: false, ocorrencias: true, risco: false },
   alternarCamada: (c) => set((s) => ({ camadas: { ...s.camadas, [c]: !s.camadas[c] } })),
   aba: "alertas",
   setAba: (aba) => set({ aba }),
@@ -71,4 +74,6 @@ export const useTela = create<EstadoTela>((set) => ({
   setConexao: (conexao) => set({ conexao }),
   ultimoEvento: 0,
   marcarEvento: () => set({ ultimoEvento: Date.now() }),
+  cartao: null,
+  abrirCartao: (cartao) => set({ cartao }),
 }));

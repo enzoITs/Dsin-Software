@@ -13,7 +13,7 @@ from app import jobs
 from app.config import settings
 from app.domain.estados import RegraViolada
 from app.services import ia as ia_servico
-from app.routers import (agentes, alertas, anomalias, central, equipamentos, ia, operacao, planejamento, preditivo, previsoes,
+from app.routers import (agentes, alertas, anomalias, central, equipamentos, ia, modelos, operacao, planejamento, preditivo, previsoes,
                          simulador, tipos)
 from app.services.barramento import barramento
 
@@ -66,7 +66,7 @@ async def validacao(_: Request, exc: RequestValidationError):
 
 # previsoes antes de equipamentos: /equipamentos/risco não pode cair em /equipamentos/{id}
 for r in (previsoes.router, equipamentos.router, tipos.router, agentes.router, operacao.router, alertas.router, central.router,
-          simulador.router, ia.router, preditivo.router, planejamento.router, anomalias.router):
+          simulador.router, ia.router, preditivo.router, planejamento.router, anomalias.router, modelos.router):
     app.include_router(r)
 
 

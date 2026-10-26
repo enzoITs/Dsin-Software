@@ -13,7 +13,20 @@ export interface AlertaC {
   membros: number; equipamentos: string[]; silenciado_ate: string | null; silenciado_motivo: string | null;
   reconhecido_em: string | null; reconhecido_por: string | null; resolvido_em: string | null; resolvido_por: string | null;
   resolucao: string | null; severidade: string; simulado: boolean;
+  preditivo?: AlertaPreditivo | null;
   lista_membros?: AlertaC[];
+}
+
+/** Alerta preventivo (Parte 3): a previsão por trás, para quando está previsto e a antecedência. */
+export interface AlertaPreditivo {
+  previsao_id: number; modulo: string; previsto_para: string; ate: string; antecedencia_min: number;
+  nivel?: string; indice?: number; probabilidade?: number; falta?: number; demanda?: number; horas?: number;
+}
+
+export interface RiscoPrevisto {
+  origem: string | null; horas: number;
+  regioes: { previsao_id: number; regiao_id: number; regiao: string; indice: number; nivel: string; nivel_nome: string;
+             pico_em: string; motivo: string | null; geometria: GeoJSON.Geometry }[];
 }
 
 export interface ListaAlertas { itens: AlertaC[]; total: number; pagina: number; por_pagina: number; por_nivel: Record<string, number> }

@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "../api/client";
 import type {
   AgenteProximo, AlertaC, CategoriaOcorrencia, Ocorrencia, EstadoCentral, Fila, Indicadores, LinhaDoTempo, ListaAlertas, RegiaoSaude,
+  RiscoPrevisto,
 } from "./tipos";
 
 type P = Record<string, string | number | boolean | (string | number)[] | undefined>;
@@ -165,3 +166,8 @@ export function useRegistrarOcorrencia() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["central", "ocorrencias"] }),
   });
 }
+
+/** Camada "Risco previsto (próximas 6 h)": maior índice de risco (P3) de cada região. Atualiza a cada 5 min. */
+export const useRiscoPrevisto = (ativo: boolean) =>
+  useQuery({ queryKey: ["central", "risco-previsto"], enabled: ativo, queryFn: () => api<RiscoPrevisto>("/risco-previsto", { params: { horas: 6 } }),
+             refetchInterval: 5 * 60_000, retry: false });

@@ -66,3 +66,38 @@ describe("formatação", () => {
     expect(efeitoTexto("índice", -3)).toBe("−3,0 pontos");
   });
 });
+
+describe("Alerta preventivo na central", () => {
+  const base = {
+    id: 9, tipo: "previsao_risco_regiao", regra: "previsao_risco_regiao", rotulo_regra: "Previsão: risco alto na região",
+    nivel: "alta" as const, nivel_inicial: "media" as const, motivos_nivel: [], estado: "aberto" as const,
+    mensagem: "Previsto para hoje, 20 h: risco muito alto na região Centro (índice 81 às 20 h)", contador: 1,
+    criado_em: new Date().toISOString(), ultima_ocorrencia_em: null, regiao: "Centro", lon: -46.63, lat: -23.55,
+    equipamento_id: null, codigo_interno: null, tipo_equipamento: null, orgao: null, dispositivo_iot_id: null, agente_alvo_id: null,
+    agente: null, ordem_servico_id: null, incidente_id: null, membros: 0, equipamentos: [], silenciado_ate: null, silenciado_motivo: null,
+    reconhecido_em: null, reconhecido_por: null, resolvido_em: null, resolvido_por: null, resolucao: null, severidade: "atencao",
+    simulado: false,
+  };
+
+  it("mostra que é previsão, para quando e o botão que abre o cartão", async () => {
+    const { CardAlerta } = await import("../central/PainelAlertas");
+    const daqui3h = new Date(Date.now() + 3 * 3_600_000 + 60_000).toISOString();
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <CardAlerta a={{ ...base, preditivo: { previsao_id: 77, modulo: "P3", previsto_para: daqui3h, ate: daqui3h, antecedencia_min: 180 } }} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText("Previsão")).toBeTruthy();
+    expect(screen.getByText(/em 3 h/)).toBeTruthy();
+    expect(screen.getByText(/Ver previsão/)).toBeTruthy();
+    expect(screen.queryByText(/Atribuir/)).toBeNull();
+  });
+
+  it("calcula a antecedência na hora", async () => {
+    const { antecedencia } = await import("../central/PainelAlertas");
+    const agora = Date.parse("2026-10-30T18:00:00Z");
+    expect(antecedencia("2026-10-30T20:30:00Z", undefined, agora)).toBe("em 2 h 30 min");
+    expect(antecedencia("2026-10-30T18:45:00Z", undefined, agora)).toBe("em 45 min");
+    expect(antecedencia("2026-10-30T17:00:00Z", "2026-10-30T19:00:00Z", agora)).toBe("em andamento");
+  });
+});

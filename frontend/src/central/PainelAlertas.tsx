@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BellOff, Check, ChevronDown, ChevronRight, ClipboardList, Crosshair, Loader2, UserPlus, X } from "lucide-react";
+import { BellOff, Check, ChevronDown, ChevronRight, ClipboardList, Crosshair, Loader2, Telescope, UserPlus, X } from "lucide-react";
 import { ApiError } from "../api/client";
 import { useAbrirOS, useAcaoAlerta, useAlerta, useAlertasCentral, useFila } from "./api";
 import { useFiltrosCentral } from "./filtros";
@@ -16,6 +16,22 @@ export function focarAlerta(a: AlertaC) {
   if (a.equipamento_id) t.selecionar({ tipo: "equipamento", id: a.equipamento_id, alertaId: a.id });
   else t.selecionar({ tipo: "alerta", id: a.id });
   if (a.lon != null && a.lat != null) t.voar({ lon: a.lon, lat: a.lat, zoom: a.regra === "regiao_descoberta" ? 12.5 : 16 });
+}
+
+/** "em 2 h 30 min", "agora" ou "começou há 40 min": antecedência do alerta preventivo, calculada na hora. */
+export function antecedencia(previstoPara: string, ate?: string, agora = Date.now()) {
+  const ini = new Date(previstoPara).getTime();
+  const min = Math.round((ini - agora) / 60_000);
+  if (min > 0) {
+    const h = Math.floor(min / 60), m = min % 60;
+    return `em ${h ? `${h} h` : ""}${h && m ? " " : ""}${m || !h ? `${m} min` : ""}`;
+  }
+  if (ate && new Date(ate).getTime() > agora) return "em andamento";
+  return "agora";
+}
+
+function horaLocal(iso: string) {
+  return new Date(iso).toLocaleString("pt-BR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function Silenciar({ a, fechar }: { a: AlertaC; fechar: () => void }) {
@@ -81,11 +97,20 @@ export function CardAlerta({ a, compacto }: { a: AlertaC; compacto?: boolean }) 
   const selecionado = (sel?.tipo === "alerta" && sel.id === a.id) || (sel?.tipo === "equipamento" && sel.alertaId === a.id);
   const silenciado = a.silenciado_ate && new Date(a.silenciado_ate).getTime() > Date.now();
   const incidente = a.regra === "incidente_correlacionado";
+  const prev = a.preditivo;
   return (
     <article
-      className={`border-l-[5px] bg-papel px-3 py-2 ${selecionado ? "outline outline-2 outline-acento" : ""} ${silenciado ? "opacity-60" : ""}`}
+      className={`border-l-[5px] px-3 py-2 ${prev ? "border-dashed bg-[#f6f4fb]" : "bg-papel"} ${selecionado ? "outline outline-2 outline-acento" : ""} ${silenciado ? "opacity-60" : ""}`}
       style={{ borderLeftColor: COR_NIVEL[a.nivel] }}
     >
+      {prev && (
+        <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-[#5b3fa6]">
+          <span className="inline-flex items-center gap-1 uppercase tracking-[0.05em]"><Telescope size={12} /> Previsão</span>
+          {prev.modulo !== "P1" && (
+            <span className="num">previsto para {horaLocal(prev.previsto_para)} · {antecedencia(prev.previsto_para, prev.ate)}</span>
+          )}
+        </div>
+      )}
       <button className="block w-full text-left" onClick={() => focarAlerta(a)}>
         <div className="flex items-baseline justify-between gap-2 text-[11px]">
           <span className="font-bold uppercase tracking-[0.05em]" style={{ color: COR_NIVEL[a.nivel] }}>
@@ -117,10 +142,11 @@ export function CardAlerta({ a, compacto }: { a: AlertaC; compacto?: boolean }) 
       {incidente && aberto && <Membros id={a.id} />}
       {!compacto && !a.resolvido_em && (
         <div className="mt-2 flex flex-wrap gap-1">
+          {prev && <Acao onClick={() => useTela.getState().abrirCartao(prev.previsao_id)}><Telescope size={13} /> Ver previsão</Acao>}
           {a.estado === "aberto" && (
             <Acao onClick={() => acao.mutate({ id: a.id, acao: "reconhecer" })} carregando={acao.isPending}><Check size={13} /> Estou vendo</Acao>
           )}
-          {a.lon != null && <Acao onClick={() => focarAlerta(a)}><UserPlus size={13} /> Atribuir</Acao>}
+          {a.lon != null && !prev && <Acao onClick={() => focarAlerta(a)}><UserPlus size={13} /> Atribuir</Acao>}
           {a.equipamento_id && !a.ordem_servico_id && (
             <Acao onClick={() => os.mutate(a.id)} carregando={os.isPending}><ClipboardList size={13} /> Abrir OS</Acao>
           )}

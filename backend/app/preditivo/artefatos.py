@@ -26,7 +26,10 @@ def ativo(db: Session, nome: str) -> tuple[ModeloVersao | None, object | None]:
     if mv is None or not mv.caminho_artefato:
         return mv, None
     if mv.caminho_artefato not in _cache:
-        if not Path(mv.caminho_artefato).exists():
+        caminho = Path(mv.caminho_artefato)
+        if not caminho.exists():  # treinado em outra máquina ou contêiner: procura pelo nome na pasta dos modelos
+            caminho = PASTA / caminho.name
+        if not caminho.exists():
             return mv, None
-        _cache[mv.caminho_artefato] = joblib.load(mv.caminho_artefato)
+        _cache[mv.caminho_artefato] = joblib.load(caminho)
     return mv, _cache[mv.caminho_artefato]

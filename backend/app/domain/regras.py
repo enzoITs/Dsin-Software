@@ -64,6 +64,8 @@ REGRAS_CORRELACIONAVEIS = {R.mau_funcionamento, R.falha_silenciosa, R.sinal_degr
 # Furto nunca é suprimido por manutenção em andamento.
 NUNCA_SUPRIMIR = {R.furto}
 SEM_ALERTA = {Situacao.desativado, Situacao.nao_instalado}
+# Parte 3: alertas preventivos falam do futuro; não pesam na saúde atual da região.
+PREVENTIVAS = {R.previsao_risco_regiao, R.previsao_falha_equipamento, R.previsao_falta_agentes, R.previsao_disponibilidade}
 
 
 def subir(n: NivelAlerta) -> NivelAlerta:

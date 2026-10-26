@@ -59,6 +59,11 @@ Não há login. O seletor no topo escolhe o perfil, enviado à API em cabeçalho
 | http://localhost:5173/amanha | **Amanhã**: mapa de risco das próximas 72 h, recomendações e contexto (feriados, eventos, clima editável) |
 | http://localhost:5173/previsao/equipamentos | Equipamentos em risco de falha (7 e 30 dias), com OS preventiva em lote |
 | http://localhost:5173/previsao/equipes | Planejamento de equipes: escala atual × recomendada |
+| http://localhost:5173/previsao/confianca | **Confiança dos modelos**: backtest contra a média histórica, calibração, o que pesa, acertômetro (previsto × real) e retreino |
+
+Na central, os **alertas preventivos** (risco alto na região nas próximas 6 h, equipamento com alta chance de falhar e sem OS, falta de agentes prevista) aparecem com visual próprio ("Previsão · previsto para… · em 3 h") e o botão "Ver previsão" abre o cartão. A camada "Risco previsto (próximas 6 h)" pinta as regiões pelo índice previsto. Esses alertas não pesam na saúde atual da região e se resolvem sozinhos quando o período passa, a OS é aberta ou o reforço é aceito.
+
+**Primeiro start:** se ainda não há modelo treinado, a API treina sozinha em segundo plano (cerca de 3 minutos) e as telas de previsão mostram o progresso. Depois, o agendador refaz P2, P3 e P4 de hora em hora (com os alertas preventivos e a conferência do acertômetro) e P1 todo dia às 5 h.
 
 Toda previsão aparece num **Cartão de Previsão** com três partes fixas: "O que estamos prevendo", "Com base em quê" e "Como isso ajuda", mais a qualidade do modelo contra a média histórica e os botões Aceitar, Ajustar e Rejeitar.
 
@@ -69,7 +74,7 @@ Plano e andamento: [docs/parte3/00-reconhecimento.md](docs/parte3/00-reconhecime
 ```bash
 podman compose exec api python -m scripts.verificar_padroes        # confere cada padrão com consultas diretas
 podman compose exec api python -m scripts.gerar_historico --forcar # refaz o histórico da cidade (mesmos dados)
-podman compose exec api python -m app.preditivo.treinar --todos   # avalia baselines (e modelos) no backtest de 90 dias
+podman compose exec api python -m app.preditivo.treinar --todos   # retreina tudo na hora (o mesmo que "Retreinar agora")
 ```
 
 Mesma semente e mesma data de referência geram os mesmos dados. Depois da subida, o `simulador` continua a história no modo contínuo: a cada 5 minutos gera as ocorrências das horas que passaram, com os mesmos padrões e o clima gravado no banco (inclusive o editado pelo operador), e uma vez por hora aplica pela API falhas, furtos e consertos sorteados pelos mesmos padrões.
@@ -258,6 +263,6 @@ Estrutura:
 - `backend/app/preditivo`: Parte 3 (calendário, clima, padrões plantados, geradores, modo contínuo).
 - `frontend/src/pages/Central.tsx` e `frontend/src/central/`: a tela da central (mapa, painéis, WebSocket).
 
-Testes: 197 no backend (73 da Parte 1, 39 da Parte 2, 85 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1, P2 e P3 superando os baselines, índice de risco, otimização de equipes respeitando as restrições, anomalias plantadas encontradas e série normal sem alarme, contrato de previsão e decisões) e 17 no frontend.
+Testes: 202 no backend (73 da Parte 1, 39 da Parte 2, 90 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1, P2 e P3 superando os baselines, índice de risco, otimização de equipes respeitando as restrições, anomalias plantadas encontradas e série normal sem alarme, contrato de previsão e decisões, alertas preventivos que disparam e se resolvem, acertômetro) e 19 no frontend.
 
 Como a IA foi usada no desenvolvimento e nos recursos do sistema: [docs/uso-de-ia.md](docs/uso-de-ia.md).

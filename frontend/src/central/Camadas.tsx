@@ -3,6 +3,7 @@ import { Layers } from "lucide-react";
 import { urlIcone } from "./icones";
 import { useTela, type Camada } from "./store";
 import { COR_GRAVIDADE, COR_ORGAO, ROTULO_GRAVIDADE, SIMBOLO_GRAVIDADE } from "./visual";
+import { COR_NIVEL as COR_RISCO, ROTULO_NIVEL as ROTULO_RISCO } from "../preditivo/formato";
 
 const CAMADAS: [Camada, string, string][] = [
   ["fixos", "Equipamentos fixos", "Radares, câmeras, balanças, cancelas, totens"],
@@ -12,6 +13,7 @@ const CAMADAS: [Camada, string, string][] = [
   ["calor", "Mapa de calor de alertas", "Concentração nas últimas 24 horas"],
   ["cobertura", "Cobertura de câmeras", "Alcance das operacionais; o que fica em branco é ponto cego"],
   ["ocorrencias", "Ocorrências (24 h)", "Acidentes, alagamentos, furtos...; quanto maior, mais grave"],
+  ["risco", "Risco previsto (próximas 6 h)", "Maior índice de risco previsto em cada região; contorno tracejado. Clique para ver a previsão"],
 ];
 
 /** Camadas (liga e desliga) e legenda: forma = o que é, cor = como está. */
@@ -63,6 +65,19 @@ export default function Camadas() {
               <span className="flex items-center gap-2"><img src={icones.grupo} width={22} alt="" /> Grupo: o miolo tem a cor da pior situação dentro dele; o anel, a proporção de cada cor. Pulsa se tiver alerta crítico</span>
               <span className="flex items-center gap-2"><img src={icones.at} width={16} alt="" /> Agente em atendimento (contorno amarelo)</span>
             </div>
+            {camadas.risco && (
+              <div className="mt-2">
+                <div className="mb-1 font-bold uppercase tracking-[0.05em] text-[11px]">Risco previsto (tracejado)</div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {(["MUITO_ALTO", "ALTO", "MODERADO", "BAIXO"] as const).map((n) => (
+                    <span key={n} className="flex items-center gap-1">
+                      <span className="h-[10px] w-[14px] border-2 border-dashed" style={{ borderColor: COR_RISCO[n], background: `${COR_RISCO[n]}33` }} />
+                      {ROTULO_RISCO[n]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
               {Object.entries(COR_ORGAO).filter(([s]) => s !== "SMT").map(([s, c]) => (
                 <span key={s} className="flex items-center gap-1"><span className="h-[9px] w-[9px] rotate-45" style={{ background: c }} />{s}</span>

@@ -4,7 +4,7 @@ import { Minimize2, SlidersHorizontal } from "lucide-react";
 import { SeletorPerfil } from "../components/Layout";
 import {
   useAlertasCentral, useCalor, useEstadoCentral, useIndicadores, useLinhaDoTempo, useOcorrenciasRecentes, useRegioesGeo,
-  useRegioesSaude,
+  useRegioesSaude, useRiscoPrevisto,
 } from "../central/api";
 import Camadas from "../central/Camadas";
 import { useConexaoEventos } from "../central/eventos";
@@ -20,6 +20,7 @@ import Regioes from "../central/Regioes";
 import RegistrarOcorrencia from "../central/RegistrarOcorrencia";
 import { useTela } from "../central/store";
 import { COR_REGIAO, ROTULO_REGIAO } from "../central/visual";
+import GavetaCartao from "../preditivo/GavetaCartao";
 
 function Conexao() {
   const c = useTela((s) => s.conexao);
@@ -73,6 +74,8 @@ export default function Central() {
   const saude = useRegioesSaude(params, chave);
   const calor = useCalor(params, chave, camadas.calor);
   const ocorrencias = useOcorrenciasRecentes(camadas.ocorrencias);
+  const risco = useRiscoPrevisto(camadas.risco);
+  const cartao = useTela((s) => s.cartao);
   const linha = useLinhaDoTempo(params, chave, linhaAberta ? minutos : 0);
   const passado = linhaAberta && minutos > 0 ? linha.data : undefined;
   const criticos = useAlertasCentral(params, chave, { nivel_alerta: ["critica", "alta"] }, 8);
@@ -133,6 +136,7 @@ export default function Central() {
             estado={estado.data} semFiltro={total === 0} regioesGeo={geo.data} saude={saude.data} calor={calor.data}
             linha={passado} area={filtros.area} onArea={onArea} escuro={sala}
             ocorrencias={camadas.ocorrencias && !passado ? ocorrencias.data?.itens : undefined}
+            riscoPrevisto={camadas.risco && !passado ? risco.data : undefined}
           />
           {!sala && (
             <>
@@ -148,6 +152,11 @@ export default function Central() {
           {estado.isFetching && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-tinta px-2 py-1 text-[12px] text-papel">Carregando o mapa…</div>}
           {estado.isError && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 border border-critico bg-papel px-3 py-2 text-[13px]">Não foi possível carregar o mapa. A API está no ar?</div>}
           {!sala && <Ficha />}
+          {!sala && camadas.risco && risco.data && risco.data.regioes.length === 0 && (
+            <div className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 border border-linha bg-papel px-3 py-1 text-[12px]">
+              {risco.data.origem ? "Sem previsão de risco para as próximas 6 h." : "Ainda não há previsões: o treino dos modelos roda no primeiro start."}
+            </div>
+          )}
           {!sala && registrando && <RegistrarOcorrencia />}
           {!sala && linhaAberta && <LinhaTempo dados={linha.data} carregando={linha.isFetching} />}
           {passado && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-acento px-3 py-1 text-[12px] font-semibold text-white">Vendo o passado: há {minutos} min</div>}
@@ -164,6 +173,8 @@ export default function Central() {
           ) : <PainelAlertas />}
         </aside>
       </div>
+
+      {cartao != null && <GavetaCartao id={cartao} fechar={() => useTela.getState().abrirCartao(null)} />}
 
       <footer className={`shrink-0 border-t border-tinta ${sala ? "h-[120px]" : "h-[92px]"}`}>
         <Regioes dados={saude.data} geo={geo.data} passado={passado ? passado.regioes : null} grande={sala} />

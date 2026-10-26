@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { ShieldCheck, Wrench, X } from "lucide-react";
 import { ApiError } from "../api/client";
 import { Botao, Carregando, Erro } from "../components/ui";
-import CartaoPrevisao, { SeloNivel } from "../preditivo/CartaoPrevisao";
-import { useCartao, useOrdensLote, useRanking } from "../preditivo/api";
+import { SeloNivel } from "../preditivo/CartaoPrevisao";
+import AvisoTreino from "../preditivo/AvisoTreino";
+import GavetaCartao from "../preditivo/GavetaCartao";
+import { useOrdensLote, useRanking } from "../preditivo/api";
 import { COR_NIVEL, ROTULO_NIVEL, pct } from "../preditivo/formato";
 
 const TIPOS = [["", "Todos os tipos"], ["CAM", "Câmeras"], ["RAD", "Radares"], ["TOT", "Totens"], ["BAL", "Balanças"],
@@ -12,16 +14,6 @@ const TIPOS = [["", "Todos os tipos"], ["CAM", "Câmeras"], ["RAD", "Radares"], 
   ["MOT", "Motos"], ["VIA", "Viaturas"]];
 const REGIOES = ["", "Centro", "Leste", "Norte", "Oeste", "Sul"];
 const NIVEIS = ["MUITO_ALTO", "ALTO", "MODERADO", "BAIXO"];
-
-function Gaveta({ id, fechar }: { id: number; fechar: () => void }) {
-  const c = useCartao(id);
-  return (
-    <div className="fixed inset-y-0 right-0 z-40 w-full max-w-[460px] overflow-y-auto border-l border-tinta bg-papel p-3 shadow-xl">
-      <button onClick={fechar} className="mb-2 inline-flex items-center gap-1 text-[13px] font-semibold"><X size={14} /> Fechar</button>
-      {c.isLoading ? <Carregando /> : c.data ? <CartaoPrevisao c={c.data} /> : <Erro erro={c.error} />}
-    </div>
-  );
-}
 
 export default function EquipamentosRisco() {
   const [janela, setJanela] = useState<7 | 30>(7);
@@ -88,6 +80,7 @@ export default function EquipamentosRisco() {
       )}
       {lote.error instanceof ApiError && <p className="mt-2 text-critico">{lote.error.erro.mensagem}</p>}
 
+      <div className="mt-3"><AvisoTreino /></div>
       {r.isLoading ? <Carregando /> : r.error ? <Erro erro={r.error} /> : (
         <div className="mt-3 overflow-x-auto">
           <table className="w-full border-collapse text-[13px]">
@@ -130,7 +123,7 @@ export default function EquipamentosRisco() {
           {itens.length === 0 && <p className="py-6 text-cinza">Nenhum equipamento com esses filtros.</p>}
         </div>
       )}
-      {aberto != null && <Gaveta id={aberto} fechar={() => setAberto(null)} />}
+      {aberto != null && <GavetaCartao id={aberto} fechar={() => setAberto(null)} />}
     </div>
   );
 }

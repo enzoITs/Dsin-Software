@@ -14,7 +14,7 @@ from app.db import get_db
 from app.deps import Ctx
 from app.models import Equipamento, Previsao, Recomendacao
 from app.models.enums import EstadoRecomendacao
-from app.preditivo import calendario, cartoes, clima, decisoes, planejamento
+from app.preditivo import calendario, cartoes, clima, decisoes, planejamento, preventivos
 from app.preditivo.p3 import NOME_PERIODO
 
 router = APIRouter(tags=["preditivo: previsões"])
@@ -94,6 +94,7 @@ def decidir_previsao(previsao_id: int, body: DecisaoIn, db: DB, ctx: Ctx):
     rec = decisoes.recomendacao_da_previsao(db, p)
     decisoes.decidir(db, rec, body.acao, ctx.usuario, body.motivo, body.parametros)
     db.commit()
+    preventivos.verificar(db)  # OS aberta ou reforço aceito: o alerta preventivo se resolve na hora
     return cartoes.cartao(p, db)
 
 
@@ -125,6 +126,7 @@ def decidir_recomendacao(rec_id: int, body: DecisaoIn, db: DB, ctx: Ctx):
         raise HTTPException(403, {"codigo": "sem_permissao", "mensagem": "Só pessoas decidem sobre recomendações."})
     decisoes.decidir(db, r, body.acao, ctx.usuario, body.motivo, body.parametros)
     db.commit()
+    preventivos.verificar(db)
     return _rec_json(r)
 
 
@@ -202,6 +204,7 @@ def abrir_ordens(body: LoteOrdensIn, db: DB, ctx: Ctx):
         decisoes.decidir(db, rec, "aceitar", ctx.usuario)
         feitas.append({"previsao_id": pid, **(rec.resultado or {}).get("execucao", {})})
     db.commit()
+    preventivos.verificar(db)
     return {"abertas": feitas, "puladas": puladas}
 
 

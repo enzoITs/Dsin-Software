@@ -10,6 +10,7 @@ Cada avaliação vira uma linha em `modelo_versao` (métricas e período) e uma 
 """
 
 import argparse
+import os
 import time
 from datetime import date, datetime, timedelta, timezone
 
@@ -159,7 +160,7 @@ def treinar(todos: bool = True, so_baselines: bool = False, log=print) -> dict:
     t0 = time.time()
     with SessionLocal() as db:
         progresso(db, situacao="rodando", etapa="Carregando dados", inicio=datetime.now(timezone.utc).isoformat(),
-                  mensagem=None)
+                  mensagem=None, pid=os.getpid())
         try:
             f = V.carregar(db)
             res = {"baselines": baselines(db, f, log)}

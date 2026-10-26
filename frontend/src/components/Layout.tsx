@@ -8,6 +8,7 @@ const LINKS = [
   { to: "/amanha", rotulo: "Amanhã" },
   { to: "/previsao/equipamentos", rotulo: "Equipamentos em risco" },
   { to: "/previsao/equipes", rotulo: "Planejamento de equipes" },
+  { to: "/previsao/confianca", rotulo: "Confiança dos modelos" },
   { to: "/", rotulo: "Inventário", fim: true },
   { to: "/equipamentos/novo", rotulo: "Cadastrar" },
   { to: "/agentes", rotulo: "Agentes" },

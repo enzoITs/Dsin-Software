@@ -8,6 +8,7 @@ import { useDecidirRecomendacao, usePlano, useRecalcularPlano } from "../prediti
 import { num } from "../preditivo/formato";
 import type { Plano, Recomendacao } from "../preditivo/tipos";
 import { usePerfil } from "../lib/perfil";
+import AvisoTreino from "../preditivo/AvisoTreino";
 
 const REGIOES = ["Centro", "Leste", "Norte", "Oeste", "Sul"];
 
@@ -57,7 +58,7 @@ export default function Planejamento() {
     recalc.mutate({ max_deslocamentos: maxDesl, min_por_regiao: minReg, regioes_fixas: fixas, salvar }, { onSuccess: (p) => setAtual(p) });
 
   if (plano.isLoading) return <Carregando />;
-  if (plano.error) return <Erro erro={plano.error} />;
+  if (plano.error) return <div className="space-y-3"><AvisoTreino /><Erro erro={plano.error} /></div>;
   const p = atual ?? plano.data!;
   const pendentes = plano.data?.recomendacoes ?? [];
   return (

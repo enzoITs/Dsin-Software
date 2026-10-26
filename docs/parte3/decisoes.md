@@ -192,3 +192,22 @@ As 6 anomalias plantadas (3 radares com queda de 80%, que começaram 2, 9 e 25 d
 | Score de saúde | P1 como novo fator do score | Não feito | O score é da Parte 1 e é recalculado a cada minuto; a probabilidade aparece ao lado dele, na ficha, sem mudar a regra já aprovada |
 
 Testes novos: contrato completo na API, decisões (aceitar abre a OS; rejeitar exige motivo; ajustar; decidir duas vezes; o PROMETHEUS não decide), OS em lote, reforço aceito movendo o turno só no período, telas sem previsões; no frontend, o cartão sempre mostra os três títulos do enunciado, os botões e a decisão já tomada. Total: 197 testes no backend e 17 no frontend.
+
+## Fase 9 (alertas preventivos, camada de risco, acertômetro e confiança)
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| `PREVISAO_RISCO_REGIAO` | Alto ou Muito alto nas próximas 6 h | Último lote de P3 por hora; um alerta por região com a primeira hora em risco e o pico. Nível médio; Muito alto sobe para alto | Antecedência real: o alerta nasce quando a previsão sai, horas antes |
+| `PREVISAO_FALHA_EQUIPAMENTO` | acima do limite e sem OS | P1 de 7 dias ≥ 25% (`prev_alerta_falha_prob`), equipamento operacional e sem OS aberta; no máximo os 15 de maior risco (`prev_alerta_falha_max`) | Com 20 mil equipamentos, sem teto a central seria inundada; o ranking completo fica na tela de risco |
+| `PREVISAO_FALTA_AGENTES` | — | Período de P4 nas próximas 6 h em que a escala atual deixa pelo menos 20 agentes-hora e 30% da demanda descobertos, e o reforço ainda não foi aceito | Configurável (`prev_alerta_falta_*`) |
+| `PREVISAO_DISPONIBILIDADE` | ao cruzar a meta | Não feito nesta fase | Depende de P6 (fase 12) |
+| Visual | "previsto para...", antecedência, abre o cartão | Faixa "Previsão" com hora prevista e antecedência calculada na hora, borda tracejada e fundo próprio, botão "Ver previsão" (gaveta com o Cartão de Previsão); sem "Atribuir" | Não confundir com o que já está acontecendo |
+| Saúde da região | — | Alertas preventivos não entram no índice de saúde da região | A saúde mede o presente |
+| Resolução | — | Some a condição (período passou, risco baixou, OS aberta, reforço aceito): resolve sozinho. Roda depois de cada lote, a cada 5 minutos e logo depois de uma decisão | Mesmo ciclo de vida dos alertas da Parte 2 |
+| Camada | "Risco previsto (próximas 6 h)" | Maior índice por hora de cada região nas próximas 6 h (`GET /risco-previsto`), tracejado na cor do nível; clique abre o cartão | — |
+| Acertômetro (Q1) | toda previsão com valor real | `valor_real` conferido de hora em hora: P2 = ocorrências da região na hora; P1 = 1 se entrou em mau funcionamento na janela. P3 e P4 não têm um valor real único e herdam a qualidade de P2 | O índice e as equipes são decisões compostas, não contagens |
+| Baseline no acertômetro | — | Para P2, a média da mesma hora e dia da semana em 8 semanas já guardada na previsão (`normal`) | A comparação usa o baseline que existia no momento da previsão |
+| Tela "Confiança dos modelos" | — | `/previsao/confianca`: selo e métricas modelo × baseline (e × logística em P1), backtest semana a semana, calibração de P1, o que mais pesa, P3/P4/P5 explicados, acertômetro com previsto × real nas últimas 48 h e por antecedência, região e dia; aviso de amostra pequena | — |
+| Agendador | P2, P3, P4 de hora em hora; P1 às 5 h | Igual (minuto 3 de cada hora; 5h10 locais). No start, refaz o que ficou atrasado | — |
+| Primeiro start | gera e treina em < 5 min, com progresso | Se não há modelo, a API treina numa thread (cerca de 3 min) e as telas mostram a etapa (`GET /modelos/treino`). `POST /modelos/treinar` (gestor) retreina | O `--reload` do desenvolvimento mata a thread: o estado guarda o processo e um treino órfão é refeito no próximo start |
+| Artefatos | — | Se o caminho gravado não existe (treinado em outro contêiner), procura pelo nome na pasta dos modelos | Portabilidade entre máquina e contêiner |

@@ -411,6 +411,7 @@ def saude_regioes(db: Session, f: Filtros | None = None, restrito: int | None = 
     ativos = and_(
         Alerta.resolvido_em.is_(None), Alerta.estado == EstadoAlerta.aberto, Alerta.nivel.in_(NIVEIS_VISIVEIS),
         or_(Alerta.silenciado_ate.is_(None), Alerta.silenciado_ate < agora), Alerta.regiao.in_(alvo), casa,
+        Alerta.tipo.notin_(regras.PREVENTIVAS),
     )
     por_nivel: dict[str, dict[str, int]] = defaultdict(dict)
     for reg, nivel, n in db.execute(select(Alerta.regiao, Alerta.nivel, func.count()).where(ativos).group_by(Alerta.regiao, Alerta.nivel)):
@@ -661,6 +662,8 @@ def alerta_json(a: Alerta, membros: int | None = None) -> dict:
         "resolucao": a.resolucao,
         "severidade": a.severidade.value,
         "simulado": bool((a.dados or {}).get("simulado")),
+        # Parte 3: alerta preventivo (previsão por trás, para quando, antecedência)
+        "preditivo": (a.dados or {}).get("preditivo"),
     }
 
 

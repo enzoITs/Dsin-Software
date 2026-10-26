@@ -53,6 +53,12 @@ PADRAO: dict[str, Any] = {
     "prev_p4_min_equipes": 1,           # nenhuma região fica com menos equipes que isto (ou que já tinha)
     "prev_p4_tempo_max_s": 10,          # tempo máximo da otimização; depois disso, heurística gulosa
     "prev_p5_horas_seguidas": 3,        # anomalia de região: ocorrências acima do previsto por N horas seguidas
+    # Parte 3: alertas preventivos na central (U3)
+    "prev_alerta_horas": 6,             # olha as próximas N horas (risco da região e falta de agentes)
+    "prev_alerta_falha_prob": 0.25,     # P1 em 7 dias a partir desta probabilidade, sem OS aberta...
+    "prev_alerta_falha_max": 15,        # ...no máximo N equipamentos (os de maior risco), para não inundar a central
+    "prev_alerta_falta_min": 20,        # falta de agentes: pelo menos N agentes-hora descobertos no período...
+    "prev_alerta_falta_pct": 0.3,       # ...e pelo menos esta fração da demanda prevista
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}
