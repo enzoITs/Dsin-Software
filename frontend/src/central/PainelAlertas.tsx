@@ -100,11 +100,11 @@ export function CardAlerta({ a, compacto }: { a: AlertaC; compacto?: boolean }) 
   const prev = a.preditivo;
   return (
     <article
-      className={`border-l-[5px] px-3 py-2 ${prev ? "border-dashed bg-[#f6f4fb]" : "bg-papel"} ${selecionado ? "outline outline-2 outline-acento" : ""} ${silenciado ? "opacity-60" : ""}`}
+      className={`border-l-[5px] px-3 py-2 ${prev ? "border-dashed bg-previsao-fundo" : "bg-papel"} ${selecionado ? "outline outline-2 outline-acento" : ""} ${silenciado ? "opacity-60" : ""}`}
       style={{ borderLeftColor: COR_NIVEL[a.nivel] }}
     >
       {prev && (
-        <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-[#5b3fa6]">
+        <div className="mb-1 flex items-center justify-between gap-2 text-[11px] font-semibold text-previsao">
           <span className="inline-flex items-center gap-1 uppercase tracking-[0.05em]"><Telescope size={12} /> Previsão</span>
           {prev.modulo !== "P1" && (
             <span className="num">previsto para {horaLocal(prev.previsto_para)} · {antecedencia(prev.previsto_para, prev.ate)}</span>
@@ -191,7 +191,7 @@ function ListaAlertas() {
       {q.isLoading && <div className="p-3 text-cinza">Carregando…</div>}
       {q.isError && <div className="p-3 text-critico">{erroTexto(q.error)}</div>}
       {criticos.length > 0 && (
-        <div className="max-h-[46%] shrink-0 space-y-[6px] overflow-y-auto border-b-2 border-critico bg-[#fdf1f1] p-2">
+        <div className="max-h-[46%] shrink-0 space-y-[6px] overflow-y-auto border-b-2 border-critico bg-critico-fundo p-2">
           {criticos.map((a) => <CardAlerta key={a.id} a={a} />)}
         </div>
       )}

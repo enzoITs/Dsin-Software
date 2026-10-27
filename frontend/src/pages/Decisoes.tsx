@@ -3,9 +3,10 @@ import { Carregando, Erro, Secao } from "../components/ui";
 import GavetaCartao from "../preditivo/GavetaCartao";
 import { useRetorno } from "../preditivo/api";
 import { num, pct } from "../preditivo/formato";
+import { COR } from "../lib/cores";
 
 const ROTULO_ESTADO: Record<string, string> = { aceita: "Aceita", ajustada: "Ajustada", rejeitada: "Rejeitada", pendente: "Pendente", expirada: "Expirada" };
-const COR_ESTADO: Record<string, string> = { aceita: "#1f9d55", ajustada: "#d99a00", rejeitada: "#d62828", pendente: "#6b6b6b", expirada: "#9a9aa0" };
+const COR_ESTADO: Record<string, string> = { aceita: COR.ok, ajustada: COR.atencao, rejeitada: COR.critico, pendente: COR.suave, expirada: COR.inativo };
 const quando = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
 
 function Numero({ rotulo, valor, sub }: { rotulo: string; valor: string; sub?: string }) {

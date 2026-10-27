@@ -8,6 +8,7 @@ import GavetaCartao from "../preditivo/GavetaCartao";
 import { useDisponibilidade, useManutencao } from "../preditivo/api";
 import { COR_NIVEL, dia, num, pct } from "../preditivo/formato";
 import type { ItemDisponibilidade, Manutencao } from "../preditivo/tipos";
+import { COR } from "../lib/cores";
 
 const curto = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
@@ -24,16 +25,16 @@ function Grafico({ x, meta }: { x: ItemDisponibilidade; meta: number }) {
     <div className="h-[240px]">
       <ResponsiveContainer>
         <ComposedChart data={dados} margin={{ left: -6, right: 8, top: 6 }}>
-          <CartesianGrid stroke="#eee" vertical={false} />
+          <CartesianGrid stroke={COR.grade} vertical={false} />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} interval={29} />
           <YAxis tick={{ fontSize: 10 }} domain={[min, max]} tickFormatter={(v: number) => pct(v, 1)} width={52} />
           <Tooltip formatter={(v: number | number[]) => (Array.isArray(v) ? `${pct(v[0], 1)} a ${pct(v[1], 1)}` : pct(Number(v), 1))} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Area dataKey="faixa" name="Faixa provável (90%)" stroke="none" fill="#ff4f00" fillOpacity={0.12} isAnimationActive={false} />
-          <Line dataKey="observado" name="Observado" stroke="#111" dot={false} strokeWidth={1.5} isAnimationActive={false} />
-          <Line dataKey="previsto" name="Se nada mudar" stroke="#ff4f00" dot={false} strokeWidth={2} isAnimationActive={false} />
-          <Line dataKey="seguindo" name="Seguindo o P1" stroke="#1f9d55" strokeDasharray="5 3" dot={false} strokeWidth={2} isAnimationActive={false} />
-          <ReferenceLine y={meta} stroke="#d62828" strokeDasharray="3 3" label={{ value: `Meta ${pct(meta)}`, fontSize: 10, position: "insideTopLeft" }} />
+          <Area dataKey="faixa" name="Faixa provável (90%)" stroke="none" fill={COR.acento} fillOpacity={0.12} isAnimationActive={false} />
+          <Line dataKey="observado" name="Observado" stroke={COR.texto} dot={false} strokeWidth={1.5} isAnimationActive={false} />
+          <Line dataKey="previsto" name="Se nada mudar" stroke={COR.acento} dot={false} strokeWidth={2} isAnimationActive={false} />
+          <Line dataKey="seguindo" name="Seguindo o P1" stroke={COR.ok} strokeDasharray="5 3" dot={false} strokeWidth={2} isAnimationActive={false} />
+          <ReferenceLine y={meta} stroke={COR.critico} strokeDasharray="3 3" label={{ value: `Meta ${pct(meta)}`, fontSize: 10, position: "insideTopLeft" }} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -56,7 +57,7 @@ function Disponibilidade() {
       </div>
       <div className="mt-3 flex border border-tinta text-[13px] font-semibold w-fit">
         {(["regiao", "tipo"] as const).map((g) => (
-          <button key={g} onClick={() => { setGrupo(g); setSel(null); }} className={`px-3 py-1 ${grupo === g ? "bg-tinta text-papel" : ""}`}>
+          <button key={g} onClick={() => { setGrupo(g); setSel(null); }} className={`px-3 py-1 ${grupo === g ? "bg-acento text-papel font-semibold" : ""}`}>
             {g === "regiao" ? "Por região" : "Por tipo"}
           </button>
         ))}

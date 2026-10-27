@@ -59,7 +59,7 @@ export default function Qualidade() {
                 <div className="text-[12px] text-cinza">{r.nome}</div>
               </div>
               <div className="col-span-2 md:col-span-1">
-                <div className="h-[10px] bg-neutro"><div className="h-full bg-tinta" style={{ width: `${(r.nota / maxNota) * 100}%` }} /></div>
+                <div className="h-[10px] bg-neutro"><div className="h-full bg-acento" style={{ width: `${(r.nota / maxNota) * 100}%` }} /></div>
               </div>
               <div className="num"><span className="text-[24px] font-bold">{r.nota.toLocaleString("pt-BR")}</span> <span className="text-[12px] text-cinza">nota</span></div>
               <div className="num text-[13px]">

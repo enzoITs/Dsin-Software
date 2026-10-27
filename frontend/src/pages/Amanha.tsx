@@ -12,6 +12,7 @@ import AvisoTreino from "../preditivo/AvisoTreino";
 import { useAmanha, useCartoes, useDetalheRegiao, useEditarClima, useRecalcularPrevisoes } from "../preditivo/api";
 import { COR_NIVEL, dia, num } from "../preditivo/formato";
 import type { Amanha as TAmanha } from "../preditivo/tipos";
+import { COR } from "../lib/cores";
 
 const hora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { weekday: "short", day: "2-digit", hour: "2-digit" }).replace(",", "");
 
@@ -91,16 +92,16 @@ function GraficoRegiao({ id, emSel }: { id: number; emSel: string | null }) {
       <div className="mt-2 h-[220px]">
         <ResponsiveContainer>
           <ComposedChart data={dados} margin={{ left: -18, right: 8, top: 6 }}>
-            <CartesianGrid stroke="#eee" vertical={false} />
+            <CartesianGrid stroke={COR.grade} vertical={false} />
             <XAxis dataKey="x" tick={{ fontSize: 10 }} interval={11} />
             <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
             <Tooltip formatter={(v: number | number[]) => (Array.isArray(v) ? `${num(v[0])} a ${num(v[1])}` : num(Number(v)))} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Area dataKey="faixa" name="Faixa provável" stroke="none" fill="#ff4f00" fillOpacity={0.15} isAnimationActive={false} />
-            <Line dataKey="previsto" name="Previsto" stroke="#ff4f00" dot={false} strokeWidth={2} isAnimationActive={false} />
-            <Line dataKey="normal" name="Normal da hora" stroke="#6b6b6b" strokeDasharray="4 3" dot={false} isAnimationActive={false} />
-            <Scatter dataKey="real" name="Aconteceu" fill="#111" isAnimationActive={false} />
-            {sel && <ReferenceLine x={sel} stroke="#111" />}
+            <Area dataKey="faixa" name="Faixa provável" stroke="none" fill={COR.acento} fillOpacity={0.15} isAnimationActive={false} />
+            <Line dataKey="previsto" name="Previsto" stroke={COR.acento} dot={false} strokeWidth={2} isAnimationActive={false} />
+            <Line dataKey="normal" name="Normal da hora" stroke={COR.suave} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+            <Scatter dataKey="real" name="Aconteceu" fill={COR.texto} isAnimationActive={false} />
+            {sel && <ReferenceLine x={sel} stroke={COR.texto} />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -189,7 +190,7 @@ export default function Amanha() {
                 {tocando ? <Pause size={14} /> : <Play size={14} />}
               </button>
               <input type="range" min={0} max={Math.max(horas.length - 1, 0)} value={i} onChange={(e) => { setTocando(false); setI(+e.target.value); }}
-                className="flex-1 accent-[#ff4f00]" aria-label="Hora prevista" />
+                className="flex-1 accent-acento" aria-label="Hora prevista" />
               <span className="num w-[120px] text-right text-[13px] font-bold">{atual ? hora(atual.em) : ""}</span>
             </div>
             {pior && (

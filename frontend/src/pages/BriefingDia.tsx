@@ -54,7 +54,7 @@ export default function BriefingDia() {
               <li key={k}>
                 {i.texto}
                 {i.previsao_id && (
-                  <button onClick={() => setCartao(i.previsao_id)} className="ml-2 border border-linha px-1 text-[11px] font-semibold text-[#5b3fa6] hover:border-[#5b3fa6]">
+                  <button onClick={() => setCartao(i.previsao_id)} className="ml-2 border border-linha px-1 text-[11px] font-semibold text-previsao hover:border-previsao">
                     cartão
                   </button>
                 )}

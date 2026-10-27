@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { COR, MAPA_FUNDO, MAPA_RASTER } from "../lib/cores";
 
 // Tiles do OpenStreetMap. Sem internet, o mapa fica com fundo neutro e o ponto continua editável.
 export const ESTILO_OSM: StyleSpecification = {
@@ -15,8 +16,8 @@ export const ESTILO_OSM: StyleSpecification = {
     },
   },
   layers: [
-    { id: "fundo", type: "background", paint: { "background-color": "#f7f7f8" } },
-    { id: "osm", type: "raster", source: "osm", paint: { "raster-saturation": -0.6 } },
+    { id: "fundo", type: "background", paint: { "background-color": MAPA_FUNDO } },
+    { id: "osm", type: "raster", source: "osm", paint: { ...MAPA_RASTER } },
   ],
 };
 
@@ -36,7 +37,7 @@ interface Props {
   cor?: string;
 }
 
-export default function MapaPonto({ lon, lat, centro, editavel, onMover, altura = 320, cor = "#ff4f00" }: Props) {
+export default function MapaPonto({ lon, lat, centro, editavel, onMover, altura = 320, cor = COR.acento }: Props) {
   const div = useRef<HTMLDivElement>(null);
   const mapa = useRef<maplibregl.Map | null>(null);
   const marcador = useRef<maplibregl.Marker | null>(null);

@@ -9,6 +9,7 @@ import type { EstadoCentral, Feicao, LinhaDoTempo, Ocorrencia, PropsAgente, Prop
 import { COR_REGIAO, RANK_NIVEL, gravidade } from "./visual";
 import { SITUACAO } from "../lib/rotulos";
 import { COR_NIVEL as COR_RISCO } from "../preditivo/formato";
+import { COR } from "../lib/cores";
 
 const CENTRO: [number, number] = [-46.62, -23.565];
 const TRILHA_MAX = 8; // últimas posições (15 s cada): uns 2 minutos de rastro
@@ -145,14 +146,14 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
       } });
       m.addLayer({ id: "cobertura", type: "fill", source: "cobertura", paint: { "fill-color": "#2563eb", "fill-opacity": 0.16 } });
       m.addLayer({ id: "cobertura-borda", type: "line", source: "cobertura", minzoom: 13, paint: { "line-color": "#2563eb", "line-width": 0.6, "line-opacity": 0.5 } });
-      m.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": "#ff4f00", "fill-opacity": 0.06 } });
-      m.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": "#ff4f00", "line-width": 2, "line-dasharray": [2, 1.5] } });
+      m.addLayer({ id: "area-fill", type: "fill", source: "area", paint: { "fill-color": COR.acento, "fill-opacity": 0.08 } });
+      m.addLayer({ id: "area-line", type: "line", source: "area", paint: { "line-color": COR.acento, "line-width": 2, "line-dasharray": [2, 1.5] } });
       m.addLayer({ id: "trilhas", type: "line", source: "trilhas", minzoom: 12.5, layout: { "line-cap": "round" }, paint: {
-        "line-color": "#334155", "line-width": 2, "line-opacity": 0.35,
+        "line-color": COR.suave, "line-width": 2, "line-opacity": 0.45,
       } });
       m.addLayer({ id: "pulso", type: "circle", source: "equip",
         filter: ["any", [">", ["coalesce", ["get", "c4"], 0], 0], [">=", ["coalesce", ["get", "n"], 0], 4]],
-        paint: { "circle-color": "#d62828", "circle-opacity": 0.4, "circle-radius": 14, "circle-stroke-width": 0 } });
+        paint: { "circle-color": COR.critico, "circle-opacity": 0.4, "circle-radius": 14, "circle-stroke-width": 0 } });
       m.addLayer({ id: "grupos", type: "symbol", source: "equip", filter: ["has", "point_count"], layout: {
         // proporções arredondadas em passos de 5% (menos imagens diferentes)
         "icon-image": ["concat", "k|", ["to-string", ["get", "g"]], "|", ["to-string", ["get", "point_count_abbreviated"]],
@@ -177,7 +178,7 @@ export default function Mapa({ estado, semFiltro, regioesGeo, saude, calor, linh
         "circle-stroke-color": "#ffffff", "circle-stroke-width": 1,
       } });
       m.addLayer({ id: "sel", type: "circle", source: "sel", paint: {
-        "circle-radius": 19, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": "#ff4f00", "circle-stroke-width": 3,
+        "circle-radius": 19, "circle-color": "rgba(0,0,0,0)", "circle-stroke-color": COR.acento, "circle-stroke-width": 3,
       } });
       m.addLayer({ id: "ponto-ocorr", type: "circle", source: "ponto-ocorr", paint: {
         "circle-radius": 11, "circle-color": "rgba(225,29,116,0.25)", "circle-stroke-color": COR_OCORRENCIA, "circle-stroke-width": 3,

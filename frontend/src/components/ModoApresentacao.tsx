@@ -100,7 +100,7 @@ export default function ModoApresentacao() {
   if (passo == null) return null;
   const p = ROTEIRO[passo];
   return (
-    <div className="fixed bottom-3 left-3 z-50 w-[380px] max-w-[calc(100vw-24px)] border border-tinta bg-tinta text-papel shadow-xl"
+    <div className="fixed bottom-3 left-3 z-50 w-[380px] max-w-[calc(100vw-24px)] border border-acento bg-neutro text-tinta shadow-xl rounded-xl"
          role="region" aria-label="Modo apresentação">
       <div className="flex items-center justify-between gap-2 px-3 py-2 text-[12px]">
         <span className="inline-flex items-center gap-1 font-semibold"><Presentation size={14} /> Passo {passo + 1} de {ROTEIRO.length}</span>
@@ -112,7 +112,7 @@ export default function ModoApresentacao() {
         </span>
       </div>
       {aberto && (
-        <div className="border-t border-[#444] px-3 pb-3 pt-2">
+        <div className="border-t border-linha px-3 pb-3 pt-2">
           <div className="text-[15px] font-bold">{p.titulo}</div>
           <ul className="mt-1 list-disc pl-4 text-[13px]">{p.mostrar.map((m) => <li key={m}>{m}</li>)}</ul>
           <p className="mt-2 border-l-[3px] border-acento pl-2 text-[13px] italic">"{p.dizer}"</p>

@@ -6,6 +6,7 @@ import { Botao } from "../components/ui";
 import { useDecidir } from "./api";
 import { COR_NIVEL, ROTULO_NIVEL, dataHora, efeitoTexto, faixaTexto, valorPrincipal } from "./formato";
 import type { Cartao } from "./tipos";
+import { COR } from "../lib/cores";
 
 const SEM_DECISAO = new Set(["NENHUMA", "VER_PLANEJAMENTO", "CEDER_EQUIPES"]);
 
@@ -17,7 +18,7 @@ export function SeloNivel({ nivel }: { nivel: string | null }) {
   if (!nivel) return null;
   return (
     <span className="inline-flex items-center gap-[6px] whitespace-nowrap text-[12px] font-semibold">
-      <span className="inline-block h-[9px] w-[9px]" style={{ background: COR_NIVEL[nivel] ?? "#999" }} />
+      <span className="inline-block h-[9px] w-[9px]" style={{ background: COR_NIVEL[nivel] ?? COR.inativo }} />
       {ROTULO_NIVEL[nivel] ?? nivel}
     </span>
   );

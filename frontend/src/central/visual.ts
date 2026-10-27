@@ -1,21 +1,22 @@
 import type { Situacao } from "../api/tipos";
 import type { EstadoRegiao, Nivel } from "./tipos";
+import { COR } from "../lib/cores";
 
 /** Cor = situação (ou o pior alerta). Mesma escala do mapa, dos grupos e das listas. */
-export const COR_GRAVIDADE = ["#9a9aa0", "#1f9d55", "#e0a800", "#ea6c13", "#d62828"] as const;
+export const COR_GRAVIDADE = [COR.inativo, COR.ok, COR.atencao, COR.alta, COR.critico] as const;
 export const ROTULO_GRAVIDADE = ["Desativado ou não instalado", "Operacional", "Manutenção próxima ou em manutenção", "Mau funcionamento ou alerta alto", "Furtado ou alerta crítico"];
 /** Símbolo da situação para quem não distingue cores. */
 export const SIMBOLO_GRAVIDADE = ["–", "✓", "!", "!", "×"] as const;
 
-export const COR_NIVEL: Record<Nivel, string> = { critica: "#d62828", alta: "#ea6c13", media: "#e0a800", baixa: "#7d8fa3" };
+export const COR_NIVEL: Record<Nivel, string> = { critica: COR.critico, alta: COR.alta, media: COR.atencao, baixa: "#8FA0B3" };
 export const ROTULO_NIVEL: Record<Nivel, string> = { critica: "Crítica", alta: "Alta", media: "Média", baixa: "Baixa" };
 export const RANK_NIVEL: Record<Nivel, number> = { baixa: 1, media: 2, alta: 3, critica: 4 };
 
-export const COR_REGIAO: Record<EstadoRegiao, string> = { normal: "#1f9d55", atencao: "#e0a800", critica: "#d62828" };
+export const COR_REGIAO: Record<EstadoRegiao, string> = { normal: COR.ok, atencao: COR.atencao, critica: COR.critico };
 export const ROTULO_REGIAO: Record<EstadoRegiao, string> = { normal: "Normal", atencao: "Atenção", critica: "Crítica" };
 
-export const COR_ORGAO: Record<string, string> = { CET: "#2563eb", GCM: "#7c3aed", PM: "#0f766e", SMT: "#b45309" };
-export const corOrgao = (sigla: string) => COR_ORGAO[sigla] ?? "#334155";
+export const COR_ORGAO: Record<string, string> = { CET: "#4C8DF6", GCM: "#A07CF2", PM: "#2BB3A3", SMT: "#D9822B" };
+export const corOrgao = (sigla: string) => COR_ORGAO[sigla] ?? "#8A877F";
 
 export const ROTULO_ESTADO_ALERTA = { aberto: "Aberto", reconhecido: "Reconhecido", em_atendimento: "Em atendimento", resolvido: "Resolvido" } as const;
 

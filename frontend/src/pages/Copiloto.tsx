@@ -6,6 +6,7 @@ import GavetaCartao from "../preditivo/GavetaCartao";
 import TextoRico from "../preditivo/TextoRico";
 import { usePerguntar, usePerguntasProntas } from "../preditivo/api";
 import type { RespostaCopiloto } from "../preditivo/tipos";
+import { COR } from "../lib/cores";
 
 interface Msg { papel: "user" | "assistant"; texto: string; resposta?: RespostaCopiloto }
 
@@ -45,7 +46,7 @@ export default function Copiloto() {
           Pergunte sobre as previsões: onde vai ser pior, o que mandar para manutenção, onde reforçar, e se chover. As respostas usam só
           os dados do sistema e apontam os cartões de previsão. O copiloto recomenda; quem decide é você.
         </p>
-        <p className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold" style={{ color: ia ? "#5b3fa6" : "#6b6b6b" }}>
+        <p className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold" style={{ color: ia ? COR.previsao : COR.suave }}>
           <Sparkles size={13} /> {ia === undefined ? "" : ia ? "IA ligada: pergunte livremente" : "Sem IA (sem chave da API): use as perguntas prontas"}
         </p>
       </div>
@@ -61,8 +62,8 @@ export default function Copiloto() {
         {msgs.length === 0 && <p className="p-4 text-center text-[13px] text-cinza">Escolha uma pergunta pronta ou escreva a sua.</p>}
         {msgs.map((m, i) => (
           <div key={i} className={`flex gap-2 ${m.papel === "user" ? "justify-end" : ""}`}>
-            {m.papel === "assistant" && <Bot size={18} className="mt-1 shrink-0 text-[#5b3fa6]" />}
-            <div className={`max-w-[85%] px-3 py-2 text-[14px] ${m.papel === "user" ? "bg-tinta text-papel" : "border border-linha bg-papel"}`}>
+            {m.papel === "assistant" && <Bot size={18} className="mt-1 shrink-0 text-previsao" />}
+            <div className={`max-w-[85%] px-3 py-2 text-[14px] ${m.papel === "user" ? "bg-acento text-papel" : "border border-linha bg-papel"}`}>
               {m.papel === "user" ? m.texto : <TextoRico texto={m.texto} abrir={setCartao} />}
               {m.resposta && (
                 <p className="mt-2 border-t border-linha pt-1 text-[11px] text-cinza">

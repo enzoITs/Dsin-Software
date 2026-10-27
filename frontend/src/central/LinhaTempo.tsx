@@ -4,6 +4,7 @@ import { useSerieHora } from "./api";
 import { useTela } from "./store";
 import type { LinhaDoTempo } from "./tipos";
 import { COR_NIVEL } from "./visual";
+import { COR } from "../lib/cores";
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
@@ -43,8 +44,8 @@ export default function LinhaTempo({ dados, carregando }: { dados?: LinhaDoTempo
               />
               <Area yAxisId="a" dataKey="alta" stroke={COR_NIVEL.alta} fill={COR_NIVEL.alta} fillOpacity={0.15} isAnimationActive={false} />
               <Area yAxisId="a" dataKey="critica" stroke={COR_NIVEL.critica} fill={COR_NIVEL.critica} fillOpacity={0.25} isAnimationActive={false} />
-              <Line yAxisId="d" dataKey="disponibilidade" stroke="#111" dot={false} strokeWidth={1.5} isAnimationActive={false} />
-              <ReferenceLine yAxisId="a" x={Date.now() - minutos * 60_000} stroke="#ff4f00" strokeWidth={2} />
+              <Line yAxisId="d" dataKey="disponibilidade" stroke={COR.texto} dot={false} strokeWidth={1.5} isAnimationActive={false} />
+              <ReferenceLine yAxisId="a" x={Date.now() - minutos * 60_000} stroke={COR.acento} strokeWidth={2} />
             </ComposedChart>
           </ResponsiveContainer>
         ) : (

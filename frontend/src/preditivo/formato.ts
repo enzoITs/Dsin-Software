@@ -1,9 +1,10 @@
+import { COR } from "../lib/cores";
 /** Formatação e cores da Parte 3, em português do Brasil. */
 
 export const COR_NIVEL: Record<string, string> = {
-  BAIXO: "#1f9d55", MODERADO: "#d99a00", ALTO: "#ff4f00", MUITO_ALTO: "#d62828",
-  ABAIXO: "#1f9d55", NORMAL: "#6b6b6b", ACIMA: "#ff4f00", MUITO_ACIMA: "#d62828",
-  ATENCAO: "#d99a00", ABAIXO_META: "#d62828",
+  BAIXO: COR.ok, MODERADO: COR.atencao, ALTO: COR.alta, MUITO_ALTO: COR.critico,
+  ABAIXO: COR.ok, NORMAL: COR.inativo, ACIMA: COR.alta, MUITO_ACIMA: COR.critico,
+  ATENCAO: COR.atencao, ABAIXO_META: COR.critico,
 };
 export const ROTULO_NIVEL: Record<string, string> = {
   BAIXO: "Baixo", MODERADO: "Moderado", ALTO: "Alto", MUITO_ALTO: "Muito alto",

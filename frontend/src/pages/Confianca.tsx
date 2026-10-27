@@ -11,11 +11,12 @@ import { useAcertometro, useModelos, useMonitor, usePadroes, useTreinar } from "
 import type { SituacaoModelo } from "../preditivo/tipos";
 import { num, pct } from "../preditivo/formato";
 import type { Acertometro, MetricasConferidas, ModeloAvaliado, PadroesDescobertos } from "../preditivo/tipos";
+import { COR } from "../lib/cores";
 
-const COR_MODELO = "#ff4f00";
-const COR_BASE = "#6b6b6b";
-const COR_REAL = "#111111";
-const COR_CONFIANCA = { alta: "#1f9d55", moderada: "#d99a00", baixa: "#d62828" } as const;
+const COR_MODELO = COR.acento;
+const COR_BASE = COR.suave;
+const COR_REAL = COR.texto;
+const COR_CONFIANCA = { alta: COR.ok, moderada: COR.atencao, baixa: COR.critico } as const;
 const diaCurto = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
 function Confianca({ nivel }: { nivel: "alta" | "moderada" | "baixa" }) {
@@ -91,7 +92,7 @@ function CartaoModelo({ m }: { m: ModeloAvaliado }) {
             {m.importancia.slice(0, 7).map((f) => (
               <li key={f.grupo} className="grid grid-cols-[1fr_auto] items-center gap-x-2 text-[12px]">
                 <span>{f.nome}</span><span className="num text-cinza">{pct(f.peso)}</span>
-                <span className="col-span-2 h-[5px] bg-neutro"><span className="block h-full bg-tinta" style={{ width: `${f.peso * 100}%` }} /></span>
+                <span className="col-span-2 h-[5px] bg-neutro"><span className="block h-full bg-acento" style={{ width: `${f.peso * 100}%` }} /></span>
               </li>
             ))}
           </ul>
@@ -105,7 +106,7 @@ function CartaoModelo({ m }: { m: ModeloAvaliado }) {
             <div className="h-[190px]">
               <ResponsiveContainer>
                 <LineChart data={m.backtest} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
-                  <CartesianGrid stroke="#eee" vertical={false} />
+                  <CartesianGrid stroke={COR.grade} vertical={false} />
                   <XAxis dataKey="data_corte" tickFormatter={diaCurto} fontSize={11} />
                   <YAxis fontSize={11} domain={["auto", "auto"]} tickFormatter={(v) => num(v, 2)} />
                   <Tooltip formatter={(v: number) => num(v, 3)} labelFormatter={(l) => `Corte de ${diaCurto(String(l))}`} />
@@ -122,11 +123,11 @@ function CartaoModelo({ m }: { m: ModeloAvaliado }) {
               <div className="h-[190px]">
                 <ResponsiveContainer>
                   <ComposedChart data={calib} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
-                    <CartesianGrid stroke="#eee" />
+                    <CartesianGrid stroke={COR.grade} />
                     <XAxis dataKey="prevista" type="number" domain={[0, maxCal]} tickFormatter={(v) => pct(v, 0)} fontSize={11} name="Prevista" />
                     <YAxis type="number" domain={[0, maxCal]} tickFormatter={(v) => pct(v, 0)} fontSize={11} />
                     <Tooltip formatter={(v: number) => pct(v, 1)} labelFormatter={(l) => `Prevista ${pct(Number(l), 1)}`} />
-                    <ReferenceLine segment={[{ x: 0, y: 0 }, { x: maxCal, y: maxCal }]} stroke="#bbb" strokeDasharray="3 3" />
+                    <ReferenceLine segment={[{ x: 0, y: 0 }, { x: maxCal, y: maxCal }]} stroke={COR.referencia} strokeDasharray="3 3" />
                     <Line dataKey="observada" name="Observada" stroke={COR_MODELO} strokeWidth={2} isAnimationActive={false} />
                     <Scatter dataKey="observada" fill={COR_MODELO} isAnimationActive={false} />
                   </ComposedChart>
@@ -203,7 +204,7 @@ function AcertometroP2({ a }: { a: Acertometro["P2"] }) {
           <div className="h-[220px]">
             <ResponsiveContainer>
               <LineChart data={serie} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
-                <CartesianGrid stroke="#eee" vertical={false} />
+                <CartesianGrid stroke={COR.grade} vertical={false} />
                 <XAxis dataKey="hora" fontSize={11} interval="preserveStartEnd" />
                 <YAxis fontSize={11} />
                 <Tooltip formatter={(v: number) => num(v, 1)} />
@@ -255,7 +256,7 @@ function AcertometroP1({ a }: { a: Acertometro["P1"] }) {
       <div className="h-[180px]">
         <ResponsiveContainer>
           <BarChart data={dados} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
-            <CartesianGrid stroke="#eee" vertical={false} />
+            <CartesianGrid stroke={COR.grade} vertical={false} />
             <XAxis dataKey="lote" fontSize={11} />
             <YAxis fontSize={11} tickFormatter={(v) => pct(v)} domain={[0, (max: number) => Math.max(max, 0.1)]} />
             <Tooltip formatter={(v: number) => pct(v, 1)} />
@@ -270,8 +271,8 @@ function AcertometroP1({ a }: { a: Acertometro["P1"] }) {
 }
 
 const VEREDITO = {
-  encontrado: { r: "Encontrado", cor: "#1f9d55" }, fraco: { r: "Sinal fraco", cor: "#d99a00" },
-  nao_encontrado: { r: "Não encontrado", cor: "#d62828" }, sem_dados: { r: "Sem dados", cor: "#9a9aa0" },
+  encontrado: { r: "Encontrado", cor: COR.ok }, fraco: { r: "Sinal fraco", cor: COR.atencao },
+  nao_encontrado: { r: "Não encontrado", cor: COR.critico }, sem_dados: { r: "Sem dados", cor: COR.inativo },
 } as const;
 
 function Curva({ titulo, dados, x, series, fmtX, fmtY }: {
@@ -284,7 +285,7 @@ function Curva({ titulo, dados, x, series, fmtX, fmtY }: {
       <div className="h-[170px]">
         <ResponsiveContainer>
           <LineChart data={dados} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
-            <CartesianGrid stroke="#eee" vertical={false} />
+            <CartesianGrid stroke={COR.grade} vertical={false} />
             <XAxis dataKey={x} fontSize={11} tickFormatter={fmtX} />
             <YAxis fontSize={11} tickFormatter={fmtY} domain={[0, "auto"]} />
             <Tooltip formatter={(v: number) => fmtY(v)} labelFormatter={(l) => fmtX(Number(l))} />
@@ -311,7 +312,7 @@ function Padroes({ d }: { d: PadroesDescobertos }) {
           <li key={p.padrao} className="border border-linha p-3 text-[13px]">
             <div className="flex items-start justify-between gap-2">
               <b>{p.padrao}. {p.titulo}</b>
-              <span className="shrink-0 px-2 py-[1px] text-[11px] font-bold uppercase tracking-[0.04em] text-white" style={{ background: VEREDITO[p.veredito].cor }}>
+              <span className="shrink-0 px-2 py-[1px] text-[11px] font-bold uppercase tracking-[0.04em] text-papel rounded-full" style={{ background: VEREDITO[p.veredito].cor }}>
                 {VEREDITO[p.veredito].r}
               </span>
             </div>
@@ -339,7 +340,7 @@ function Padroes({ d }: { d: PadroesDescobertos }) {
   );
 }
 
-const COR_SIT: Record<SituacaoModelo, string> = { ok: "#1f9d55", sem_dados: "#6b6b6b", atencao: "#d99a00", retreinar: "#d62828" };
+const COR_SIT: Record<SituacaoModelo, string> = { ok: COR.ok, sem_dados: COR.suave, atencao: COR.atencao, retreinar: COR.critico };
 const ROT_SIT: Record<SituacaoModelo, string> = { ok: "OK", sem_dados: "Sem dados ainda", atencao: "Atenção", retreinar: "Retreinar" };
 
 function MonitorModelos() {

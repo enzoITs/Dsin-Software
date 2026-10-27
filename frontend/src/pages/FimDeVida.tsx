@@ -4,6 +4,7 @@ import { Carregando, Erro } from "../components/ui";
 import AvisoTreino from "../preditivo/AvisoTreino";
 import { useFimDeVida } from "../preditivo/api";
 import { num, pct } from "../preditivo/formato";
+import { COR } from "../lib/cores";
 
 const TIPOS = [["", "Todos os tipos"], ["CAM", "Câmeras"], ["RAD", "Radares"], ["TOT", "Totens"], ["BAL", "Balanças"], ["CAN", "Cancelas"]];
 const REGIOES = ["", "Centro", "Leste", "Norte", "Oeste", "Sul"];
@@ -62,7 +63,7 @@ export default function FimDeVida() {
                     <div className="text-[12px] text-cinza">{x.modelo} ({x.marca}) · {x.regiao ?? "—"}</div>
                   </td>
                   <td className="num pr-3">{num(x.idade_anos)} anos
-                    <div className="mt-1 h-[4px] w-[90px] bg-linha"><div className="h-full" style={{ width: `${Math.min(100, x.uso_vida_pct)}%`, background: x.uso_vida_pct >= 100 ? "#d62828" : "#d99a00" }} /></div>
+                    <div className="mt-1 h-[4px] w-[90px] bg-linha"><div className="h-full" style={{ width: `${Math.min(100, x.uso_vida_pct)}%`, background: x.uso_vida_pct >= 100 ? COR.critico : COR.atencao }} /></div>
                     <div className="text-[11px] text-cinza">{x.uso_vida_pct}% de {x.vida_util_anos} anos</div>
                   </td>
                   <td className="num pr-3">{x.falhas_ano} falhas<div className="text-[12px] text-cinza">{x.dias_parado_ano} dias parado</div></td>

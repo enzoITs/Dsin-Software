@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { COR, MAPA_FUNDO, MAPA_RASTER } from "../lib/cores";
 
 const CENTRO: [number, number] = [-46.62, -23.565];
 
@@ -29,15 +30,15 @@ export default function MapaPontos({ geo, pontos, selecionado, onSelecionar }: P
         version: 8,
         sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap" } },
         layers: [
-          { id: "fundo", type: "background", paint: { "background-color": "#f2f2f3" } },
-          { id: "osm", type: "raster", source: "osm", paint: { "raster-saturation": -0.9, "raster-opacity": 0.6 } },
+          { id: "fundo", type: "background", paint: { "background-color": MAPA_FUNDO } },
+          { id: "osm", type: "raster", source: "osm", paint: { ...MAPA_RASTER } },
         ],
       },
     });
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     m.on("load", () => {
       m.addSource("regioes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-      m.addLayer({ id: "borda", type: "line", source: "regioes", paint: { "line-color": "#111", "line-width": 0.8, "line-opacity": 0.6 } });
+      m.addLayer({ id: "borda", type: "line", source: "regioes", paint: { "line-color": COR.texto, "line-width": 0.8, "line-opacity": 0.6 } });
       m.addSource("alcance", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       // Alcance aproximado (raio em metros convertido para pixels no zoom atual)
       m.addLayer({ id: "alcance", type: "circle", source: "alcance", paint: {
@@ -45,7 +46,7 @@ export default function MapaPontos({ geo, pontos, selecionado, onSelecionar }: P
         "circle-color": ["get", "cor"], "circle-opacity": 0.12, "circle-stroke-color": ["get", "cor"], "circle-stroke-width": 1 } });
       m.addSource("pontos", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "pontos", type: "circle", source: "pontos", paint: {
-        "circle-radius": ["get", "raio"], "circle-color": ["get", "cor"], "circle-stroke-color": "#111",
+        "circle-radius": ["get", "raio"], "circle-color": ["get", "cor"], "circle-stroke-color": COR.fundo,
         "circle-stroke-width": ["get", "borda"] } });
       const dica = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "dica-mapa" });
       m.on("click", "pontos", (e) => { const id = e.features?.[0]?.properties?.id; if (id != null) cb.current(Number(id)); });

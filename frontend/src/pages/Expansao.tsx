@@ -6,6 +6,7 @@ import AvisoTreino from "../preditivo/AvisoTreino";
 import MapaPontos, { type Ponto } from "../preditivo/MapaPontos";
 import { useExpansao } from "../preditivo/api";
 import { num } from "../preditivo/formato";
+import { COR } from "../lib/cores";
 
 const CRITERIOS = [["combinado", "Ocorrências e furtos"], ["ocorrencias", "Só ocorrências"], ["furtos", "Só furtos de equipamento"]];
 
@@ -17,7 +18,7 @@ export default function Expansao() {
   const s = e.data?.sugestoes ?? [];
   const pontos: Ponto[] = useMemo(() => s.map((x) => ({
     id: x.ordem, lon: x.lon, lat: x.lat, raio: 6 + x.pontuacao / 20, alcance_m: e.data?.resumo?.alcance_m ?? 300,
-    cor: x.furtos_evitados_ano >= 0.05 ? "#d62828" : "#ff4f00",
+    cor: x.furtos_evitados_ano >= 0.05 ? COR.critico : COR.alta,
     rotulo: `${x.ordem}. ${x.bairro}: ${num(x.ocorrencias_mes)} ocorrências/mês sem câmera`,
   })), [s, e.data?.resumo?.alcance_m]);
   const r = e.data?.resumo;
@@ -30,7 +31,7 @@ export default function Expansao() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <div className="flex border border-tinta text-[13px] font-semibold">
           {CRITERIOS.map(([v, t]) => (
-            <button key={v} onClick={() => { setCriterio(v); setSel(null); }} className={`px-3 py-1 ${criterio === v ? "bg-tinta text-papel" : ""}`}>{t}</button>
+            <button key={v} onClick={() => { setCriterio(v); setSel(null); }} className={`px-3 py-1 ${criterio === v ? "bg-acento text-papel font-semibold" : ""}`}>{t}</button>
           ))}
         </div>
         {r && (

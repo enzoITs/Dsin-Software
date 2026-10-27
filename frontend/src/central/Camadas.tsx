@@ -55,7 +55,7 @@ export default function Camadas() {
             <ul className="space-y-[2px]">
               {[4, 3, 2, 1, 0].map((g) => (
                 <li key={g} className="flex items-center gap-2">
-                  <span className="inline-flex h-[14px] w-[14px] items-center justify-center text-[9px] font-bold text-white" style={{ background: COR_GRAVIDADE[g] }}>{SIMBOLO_GRAVIDADE[g]}</span>
+                  <span className="inline-flex h-[14px] w-[14px] items-center justify-center text-[9px] font-bold text-papel" style={{ background: COR_GRAVIDADE[g] }}>{SIMBOLO_GRAVIDADE[g]}</span>
                   {ROTULO_GRAVIDADE[g]}
                 </li>
               ))}

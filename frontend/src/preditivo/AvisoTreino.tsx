@@ -17,8 +17,8 @@ export default function AvisoTreino() {
   if (!t.data) return null;
   if (situacao === "rodando") {
     return (
-      <div className="flex items-center gap-2 border border-[#5b3fa6] bg-[#f6f4fb] px-3 py-2 text-[13px]" role="status">
-        <Loader2 size={15} className="animate-spin text-[#5b3fa6]" />
+      <div className="flex items-center gap-2 border border-previsao bg-previsao-fundo px-3 py-2 text-[13px]" role="status">
+        <Loader2 size={15} className="animate-spin text-previsao" />
         <span><b>Treinando os modelos de previsão</b> (cerca de 3 minutos). Etapa: {t.data.etapa ?? "começando"}.
           As telas se atualizam sozinhas quando terminar.</span>
       </div>

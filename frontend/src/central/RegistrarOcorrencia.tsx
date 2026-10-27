@@ -62,7 +62,7 @@ export default function RegistrarOcorrencia() {
             {GRAVIDADES.map(([g, r]) => (
               <button
                 key={g} role="radio" aria-checked={gravidade === g} onClick={() => setGravidade(g)}
-                className={`flex-1 border px-1 py-[5px] text-[12px] font-semibold ${gravidade === g ? "border-tinta bg-tinta text-papel" : "border-linha hover:border-tinta"}`}
+                className={`flex-1 border px-1 py-[5px] text-[12px] font-semibold ${gravidade === g ? "border-acento bg-acento text-papel" : "border-linha hover:border-tinta"}`}
               >
                 {g} · {r}
               </button>

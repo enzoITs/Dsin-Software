@@ -7,6 +7,7 @@ import { SeloNivel } from "../preditivo/CartaoPrevisao";
 import { useCenario, useCenarios, useOpcoesCenario, useRemoverCenario, useSalvarCenario, useSimular } from "../preditivo/api";
 import { COR_NIVEL, num } from "../preditivo/formato";
 import type { CenarioParams, ResultadoCenario } from "../preditivo/tipos";
+import { COR } from "../lib/cores";
 
 const vazio = (): CenarioParams => ({ eventos: [], cancelar_eventos: [], clima: [], equipes: [], equipamentos_fora: null, manutencoes: null });
 const hora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -213,8 +214,8 @@ export function Resultado({ r }: { r: ResultadoCenario }) {
 
       <div>
         <h4 className="mb-1 text-[11px] font-bold uppercase tracking-[0.06em]">Risco não coberto (agentes-hora ponderados pelo risco)</h4>
-        {([["Hoje, escala como está", eq.base.nao_coberto_escala, "#6b6b6b"], ["Cenário, escala como está", eq.cenario.nao_coberto_escala, "#ff4f00"],
-           ["Cenário, seguindo a recomendação", eq.cenario.nao_coberto_otimizado, "#1f9d55"]] as const).map(([rot, v, cor]) => (
+        {([["Hoje, escala como está", eq.base.nao_coberto_escala, COR.suave], ["Cenário, escala como está", eq.cenario.nao_coberto_escala, COR.alta],
+           ["Cenário, seguindo a recomendação", eq.cenario.nao_coberto_otimizado, COR.ok]] as const).map(([rot, v, cor]) => (
           <div key={rot} className="grid grid-cols-[210px_1fr_70px] items-center gap-2 text-[12px]">
             <span>{rot}</span>
             <span className="h-[12px] bg-neutro"><span className="block h-full" style={{ width: `${(v / max) * 100}%`, background: cor }} /></span>
@@ -239,8 +240,8 @@ export function Resultado({ r }: { r: ResultadoCenario }) {
                 <td className="whitespace-nowrap pr-2 text-cinza">{p.rotulo}</td>
                 {p.regioes.map((x) => (
                   <td key={x.regiao} className="px-[2px] py-[2px]">
-                    <span className="num block min-w-[64px] px-2 py-[2px] text-white" title={`Hoje ${x.indice_base}; no cenário ${x.indice_cenario}`}
-                          style={{ background: COR_NIVEL[x.nivel_cenario ?? x.nivel_base], outline: x.nivel_cenario !== x.nivel_base ? "2px solid #111" : undefined }}>
+                    <span className="num block min-w-[64px] px-2 py-[2px] text-papel rounded-md" title={`Hoje ${x.indice_base}; no cenário ${x.indice_cenario}`}
+                          style={{ background: COR_NIVEL[x.nivel_cenario ?? x.nivel_base], outline: x.nivel_cenario !== x.nivel_base ? `2px solid ${COR.texto}` : undefined }}>
                       {num(x.indice_cenario ?? 0, 0)} <span className="opacity-75">({num(x.indice_base, 0)})</span>
                     </span>
                   </td>

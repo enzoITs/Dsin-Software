@@ -9,10 +9,10 @@ type Variante = "primario" | "secundario" | "fantasma" | "perigo";
 export function Botao({ variante = "secundario", carregando, children, className = "", ...p }:
   ButtonHTMLAttributes<HTMLButtonElement> & { variante?: Variante; carregando?: boolean }) {
   const estilos: Record<Variante, string> = {
-    primario: "bg-acento text-white border-acento hover:bg-[#e64700]",
-    secundario: "bg-papel text-tinta border-tinta hover:bg-neutro",
+    primario: "bg-acento text-papel border-acento hover:bg-acento-forte hover:border-acento-forte",
+    secundario: "bg-neutro text-tinta border-linha hover:border-acento",
     fantasma: "bg-transparent text-tinta border-transparent hover:bg-neutro",
-    perigo: "bg-papel text-critico border-critico hover:bg-[#fdf1f1]",
+    perigo: "bg-papel text-critico border-critico hover:bg-critico-fundo",
   };
   return (
     <button

@@ -48,7 +48,7 @@ function Botao({ children, ativo, ...p }: React.ButtonHTMLAttributes<HTMLButtonE
   return (
     <button
       {...p}
-      className={`inline-flex items-center gap-[6px] whitespace-nowrap border px-[9px] py-[5px] text-[12px] font-semibold ${ativo ? "border-tinta bg-tinta text-papel" : "border-linha bg-papel hover:border-tinta"}`}
+      className={`inline-flex items-center gap-[6px] whitespace-nowrap border px-[9px] py-[5px] text-[12px] font-semibold ${ativo ? "border-acento bg-acento text-papel" : "border-linha bg-papel hover:border-tinta"}`}
     >
       {children}
     </button>
@@ -85,7 +85,7 @@ function Simular() {
             )}
           </div>
           <button
-            className="flex w-full items-center justify-center gap-2 border border-acento bg-acento px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 border border-acento bg-acento px-3 py-2 text-[13px] font-semibold text-papel disabled:opacity-50"
             disabled={sim.isPending}
             onClick={() => sim.mutate({ tipo, regiao, quantidade: qtd }, {
               onSuccess: (r) => {

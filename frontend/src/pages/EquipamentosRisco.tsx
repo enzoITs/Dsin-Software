@@ -40,7 +40,7 @@ export default function EquipamentosRisco() {
         </div>
         <div className="flex border border-tinta text-[13px] font-semibold">
           {([7, 30] as const).map((j) => (
-            <button key={j} onClick={() => { setJanela(j); setSel(new Set()); }} className={`px-3 py-1 ${janela === j ? "bg-tinta text-papel" : ""}`}>
+            <button key={j} onClick={() => { setJanela(j); setSel(new Set()); }} className={`px-3 py-1 ${janela === j ? "bg-acento text-papel font-semibold" : ""}`}>
               Próximos {j} dias
             </button>
           ))}

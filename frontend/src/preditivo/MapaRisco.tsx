@@ -3,6 +3,7 @@ import maplibregl, { type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { COR_NIVEL, ROTULO_NIVEL } from "./formato";
 import type { RegiaoHora } from "./tipos";
+import { COR, MAPA_FUNDO, MAPA_RASTER } from "../lib/cores";
 
 const CENTRO: [number, number] = [-46.62, -23.565];
 
@@ -29,8 +30,8 @@ export default function MapaRisco({ geo, regioes, selecionada, onSelecionar }: P
         version: 8,
         sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap" } },
         layers: [
-          { id: "fundo", type: "background", paint: { "background-color": "#f2f2f3" } },
-          { id: "osm", type: "raster", source: "osm", paint: { "raster-saturation": -0.9, "raster-opacity": 0.6 } },
+          { id: "fundo", type: "background", paint: { "background-color": MAPA_FUNDO } },
+          { id: "osm", type: "raster", source: "osm", paint: { ...MAPA_RASTER } },
         ],
       },
     });
@@ -38,7 +39,7 @@ export default function MapaRisco({ geo, regioes, selecionada, onSelecionar }: P
     m.on("load", () => {
       m.addSource("regioes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       m.addLayer({ id: "risco", type: "fill", source: "regioes", paint: { "fill-color": ["get", "cor"], "fill-opacity": ["get", "opacidade"] } });
-      m.addLayer({ id: "borda", type: "line", source: "regioes", paint: { "line-color": "#111", "line-width": ["get", "borda"] } });
+      m.addLayer({ id: "borda", type: "line", source: "regioes", paint: { "line-color": COR.texto, "line-width": ["get", "borda"] } });
       // Sem fontes do servidor de mapas (funciona offline): o nome aparece numa dica ao passar o mouse.
       const dica = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "dica-mapa" });
       m.on("click", "risco", (e) => { const id = e.features?.[0]?.properties?.regiao_id; if (id != null) cb.current(Number(id)); });
@@ -64,7 +65,7 @@ export default function MapaRisco({ geo, regioes, selecionada, onSelecionar }: P
         ...f,
         properties: {
           ...f.properties, regiao_id: r?.regiao_id ?? null,
-          cor: r ? COR_NIVEL[r.nivel] : "#cccccc", opacidade: r ? 0.25 + Math.min(r.indice, 100) / 100 * 0.45 : 0.1,
+          cor: r ? COR_NIVEL[r.nivel] : COR.inativo, opacidade: r ? 0.25 + Math.min(r.indice, 100) / 100 * 0.45 : 0.1,
           borda: r && r.regiao_id === selecionada ? 3 : 0.8,
           rotulo: r ? `${f.properties?.nome}: risco ${Math.round(r.indice)} (${ROTULO_NIVEL[r.nivel].toLowerCase()})` : String(f.properties?.nome ?? ""),
         },

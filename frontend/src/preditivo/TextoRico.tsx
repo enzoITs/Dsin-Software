@@ -8,7 +8,7 @@ function inline(texto: string, abrir: (id: number) => void): ReactNode[] {
     if (prev) {
       return (
         <button key={i} onClick={() => abrir(Number(prev[1]))} title="Abrir o cartão de previsão"
-          className="mx-[2px] inline border border-linha bg-neutro px-1 align-baseline text-[11px] font-semibold text-[#5b3fa6] hover:border-[#5b3fa6]">
+          className="mx-[2px] inline border border-linha bg-neutro px-1 align-baseline text-[11px] font-semibold text-previsao hover:border-previsao">
           cartão
         </button>
       );

@@ -134,7 +134,7 @@ export default function Central() {
         <main className="relative min-h-[320px] flex-1">
           <Mapa
             estado={estado.data} semFiltro={total === 0} regioesGeo={geo.data} saude={saude.data} calor={calor.data}
-            linha={passado} area={filtros.area} onArea={onArea} escuro={sala}
+            linha={passado} area={filtros.area} onArea={onArea} escuro
             ocorrencias={camadas.ocorrencias && !passado ? ocorrencias.data?.itens : undefined}
             riscoPrevisto={camadas.risco && !passado ? risco.data : undefined}
           />
@@ -149,7 +149,7 @@ export default function Central() {
               </button>
             </>
           )}
-          {estado.isFetching && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-tinta px-2 py-1 text-[12px] text-papel">Carregando o mapa…</div>}
+          {estado.isFetching && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-neutro px-3 py-1 text-[12px] text-tinta rounded-full border border-linha">Carregando o mapa…</div>}
           {estado.isError && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 border border-critico bg-papel px-3 py-2 text-[13px]">Não foi possível carregar o mapa. A API está no ar?</div>}
           {!sala && <Ficha />}
           {!sala && camadas.risco && risco.data && risco.data.regioes.length === 0 && (
@@ -159,7 +159,7 @@ export default function Central() {
           )}
           {!sala && registrando && <RegistrarOcorrencia />}
           {!sala && linhaAberta && <LinhaTempo dados={linha.data} carregando={linha.isFetching} />}
-          {passado && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-acento px-3 py-1 text-[12px] font-semibold text-white">Vendo o passado: há {minutos} min</div>}
+          {passado && <div className="absolute left-1/2 top-2 z-10 -translate-x-1/2 bg-acento px-3 py-1 text-[12px] font-semibold text-papel rounded-full">Vendo o passado: há {minutos} min</div>}
         </main>
         <aside className={`flex min-h-0 shrink-0 flex-col border-l border-linha md:w-[370px] ${sala ? "md:w-[440px]" : "h-[45vh] md:h-auto"}`}>
           {sala ? (
