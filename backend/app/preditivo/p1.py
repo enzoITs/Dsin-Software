@@ -128,7 +128,8 @@ def avaliar(f: V.Fontes, df: pd.DataFrame, fim: date, cfg: dict, janela: int, lo
         p = modelo.prever(teste)
         pl = _prever_logistica(log_modelo, teste)
         pb = baselines.p1_prever(f, teste, janela, cfg["prev_p1_taxa_dias"])
-        previsto.append(pd.DataFrame({"corte": teste.corte, "y": teste[alvo], "p": p, "p_log": pl, "p_base": pb}))
+        previsto.append(pd.DataFrame({"corte": teste.corte, "y": teste[alvo], "p": p, "p_log": pl, "p_base": pb,
+                                      "regiao": teste.regiao.astype(str), "prefixo": teste.prefixo.astype(str)}))
         m, mb = avaliacao.classificacao(teste[alvo], p), avaliacao.classificacao(teste[alvo], pb)
         por_corte.append({"data_corte": d, "auc": m["auc"], "brier": m["brier"], "precisao_50": m["precisao_50"],
                           "auc_baseline": mb["auc"], "brier_baseline": mb["brier"], "precisao_50_baseline": mb["precisao_50"],

@@ -65,6 +65,13 @@ describe("formatação", () => {
     expect(efeitoTexto("probabilidade", 0.18)).toBe("+18,0 p.p.");
     expect(efeitoTexto("índice", -3)).toBe("−3,0 pontos");
   });
+  it("disponibilidade, furto e carga de manutenção (fase 12)", () => {
+    expect(valorPrincipal("disponibilidade", 0.8907)).toBe("89,1%");
+    expect(valorPrincipal("probabilidade", 0.0042)).toBe("0,42%");
+    expect(valorPrincipal("técnicos-dia", 292.4)).toBe("292 técnicos-dia");
+    expect(faixaTexto("disponibilidade", 0.88, 0.9)).toBe("entre 88% e 90%");
+    expect(efeitoTexto("disponibilidade", -0.37)).toBe("−0,4 p.p.");
+  });
 });
 
 describe("Alerta preventivo na central", () => {

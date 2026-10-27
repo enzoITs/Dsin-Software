@@ -1,7 +1,9 @@
 """O humano decide: aceitar, ajustar ou rejeitar uma recomendação, sempre registrado (C5).
 
-Aceitar ou ajustar executa a ação: abre a ordem de serviço preventiva (P1) ou move as equipes
-na escala para o período recomendado (P4). Rejeitar exige motivo.
+Aceitar ou ajustar executa a ação: abre a ordem de serviço preventiva (P1), move as equipes
+na escala para o período recomendado (P4) ou abre as OS preventivas dos equipamentos de risco alto
+de uma região (P6). As demais (ronda noturna de P7, planejamento de manutenção de P8) ficam registradas
+para quem executa fora do sistema. Rejeitar exige motivo.
 """
 
 from datetime import datetime, timezone
@@ -96,6 +98,10 @@ def decidir(db: Session, rec: Recomendacao, acao: str, usuario: str, motivo: str
             resultado = _abrir_os(db, rec, params, usuario)
         elif rec.tipo == "REFORCAR_EQUIPES":
             resultado = _mover_equipes(db, params)
+        elif rec.tipo == "PRIORIZAR_MANUTENCAO":
+            abertas = [_abrir_os(db, rec, {"equipamento_id": i, "prioridade": "alta"}, usuario)
+                       for i in params.get("equipamento_ids", [])]
+            resultado = {"ordens_servico": abertas, "novas": sum(not a["ja_existia"] for a in abertas)}
     rec.resultado = {**(rec.resultado or {}), "execucao": resultado}
     db.flush()
     emitir(db, {"tipo": "recomendacao", "acao": rec.estado.value, "recomendacao": {"id": rec.id, "tipo": rec.tipo,

@@ -59,6 +59,18 @@ PADRAO: dict[str, Any] = {
     "prev_alerta_falha_max": 15,        # ...no máximo N equipamentos (os de maior risco), para não inundar a central
     "prev_alerta_falta_min": 20,        # falta de agentes: pelo menos N agentes-hora descobertos no período...
     "prev_alerta_falta_pct": 0.3,       # ...e pelo menos esta fração da demanda prevista
+    # Parte 3, fase 12: tendências, furto, carga de manutenção e expansão
+    "prev_p6_eficacia_preventiva": 0.5,  # P6 "seguindo P1": fração das falhas de risco alto evitada pela preventiva
+                                         # (no histórico, preventiva atrasada dobra o risco: em dia, metade das falhas)
+    "prev_alerta_disponibilidade_dias": 30,  # alerta quando a previsão cruza a meta dentro de N dias
+    "prev_p7_limites_nivel": [0.004, 0.012, 0.03],  # P7 em 30 dias: moderado, alto e muito alto a partir de
+    "prev_p8_horas_corretiva": {"padrao": 4, "CAM": 3, "RAD": 5, "BAL": 6, "CAN": 4, "TOT": 3, "PAT": 1.5, "VTR": 6, "MOT": 4},
+    "prev_p8_horas_preventiva": {"padrao": 2, "CAM": 1.5, "RAD": 3, "BAL": 4, "PAT": 0.5, "VTR": 3},
+    "prev_p8_horas_dia": 8,             # jornada de um técnico
+    "prev_p8_pecas_por_corretiva": {"padrao": 0.5, "CAM": 0.6, "RAD": 0.7, "BAL": 0.8, "PAT": 0.4},  # kits de reparo
+    "prev_c2_celula_m": 400,            # expansão: tamanho da célula da grade
+    "prev_c2_sugestoes": 10,            # quantas sugestões de câmera nova
+    "prev_c2_distancia_min_m": 800,     # distância mínima entre duas sugestões
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}

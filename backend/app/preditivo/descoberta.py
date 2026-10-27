@@ -6,8 +6,11 @@ Os modelos nunca leem `padroes.py`. Aqui, depois do treino, perguntamos ao model
   do modelo). O efeito aprendido é a razão entre as probabilidades médias.
 - P2 (ocorrências): o perfil por hora e dia que o modelo prevê nas últimas 4 semanas, ao lado do que
   aconteceu, e contrafactuais de chuva, evento e véspera de feriado.
-- Padrões sem modelo próprio ainda (furtos, disponibilidade) ou de detectores (anomalias): consulta direta,
-  dita como tal.
+- P7 (furto): o risco previsto nos bairros com mais furtos × nos demais, e o contrafactual "e se não
+  houvesse câmera a menos de 300 m" nesses bairros. A hora do furto não entra no modelo (é mensal):
+  a madrugada é conferida por consulta, dita como tal.
+- P6 (disponibilidade): a região em que a tendência prevista cai mais, ao lado da queda observada.
+- Anomalias: os alertas dos detectores (P5).
 
 Só no fim o resultado é posto ao lado da regra plantada (lida de `padroes.py`, que é a "resposta da
 prova"). Os dados são sintéticos: o relatório mostra que o método acha padrões reais quando eles existem.
@@ -189,24 +192,64 @@ def padroes_p2(modelo, linhas: pd.DataFrame) -> tuple[list[dict], dict]:
 # ---------------------------------------------------------------- consultas (sem modelo próprio ainda)
 
 
-def padroes_consulta(db: Session) -> list[dict]:
-    itens = []
+def padroes_p7(db: Session, modelo, eq: pd.DataFrame, nomes_bairro: dict) -> list[dict]:
+    """Padrão 6 pelo modelo de furto: onde o risco previsto se concentra e quanto a câmera por perto pesa."""
+    if eq.empty:
+        return []
+    eq = eq.assign(p=modelo.prever(eq), bairro=eq.bairro_id.map(nomes_bairro))
+    por_bairro = eq.groupby("bairro").p.mean().sort_values(ascending=False)
+    top2 = list(por_bairro.index[:2])
+    dentro = eq[eq.bairro.isin(top2)]
+    fora = eq[~eq.bairro.isin(top2)]
+    razao_bairro = float(dentro.p.mean() / max(fora.p.mean(), 1e-9))
+    sem = _media(modelo, dentro, dist_camera_m=1000.0)
+    com = _media(modelo, dentro, dist_camera_m=100.0)
+    razao_cam = sem / max(com, 1e-9)
     try:
         ini, fim = verificacao.periodo(db)
+        furtos = verificacao.p6_furtos(db, ini.to_pydatetime(), fim.to_pydatetime())
+        madrugada = f"; pela consulta ao histórico, {_fmt(furtos[1]['obtido'] * 100, 0)}% dos furtos nesses bairros entre 0 h e 5 h"
     except Exception:
-        return itens
-    furtos = verificacao.p6_furtos(db, ini.to_pydatetime(), fim.to_pydatetime())
-    itens.append({"padrao": 6, "titulo": "Furtos de equipamentos em dois bairros, de madrugada, longe de câmeras",
-                  "modulo": "consulta", "metodo": "Consulta direta ao histórico (o modelo de risco de furto, P7, é da fase 12)",
-                  "descoberto": f"{_fmt(furtos[0]['obtido'] * 100, 0)}% dos furtos em 2 de 28 bairros; neles, "
-                                f"{_fmt(furtos[1]['obtido'] * 100, 0)}% entre 0 h e 5 h",
-                  "efeito": None, "plantado": f"{', '.join(P.BAIRROS_FURTO)}, 0 h às 5 h, sem câmera a menos de {P.RAIO_CAMERA_M} m",
-                  "veredito": "encontrado" if all(f["ok"] for f in furtos) else "fraco"})
-    disp = verificacao.p11_regiao(db, ini.to_pydatetime(), fim.to_pydatetime())
-    itens.append({"padrao": 11, "titulo": "Queda lenta de disponibilidade numa região sem preventiva", "modulo": "consulta",
-                  "metodo": "Consulta direta à disponibilidade diária (a tendência P6 é da fase 12)",
-                  "descoberto": disp["detalhe"].replace(".", ","), "efeito": None, "plantado": f"região {P.REGIAO_SEM_PREVENTIVA}",
-                  "veredito": "encontrado" if disp["ok"] else "fraco"})
+        madrugada = ""
+    acertou = set(top2) == set(P.BAIRROS_FURTO)
+    return [{"padrao": 6, "titulo": "Furtos de equipamentos em dois bairros, de madrugada, longe de câmeras", "modulo": "P7",
+             "metodo": ("Risco de furto previsto (P7) por bairro e contrafactual da câmera: o mesmo equipamento com a câmera "
+                        "mais próxima a 1 km × a 100 m. A hora vem de consulta direta (o modelo é mensal)"),
+             "descoberto": (f"Os dois bairros de maior risco previsto são {' e '.join(top2)} ({_fmt(razao_bairro)}× o resto da "
+                            f"cidade); neles, sem câmera por perto, o risco é {_fmt(razao_cam)}× maior{madrugada}"),
+             "efeito": round(min(razao_bairro, razao_cam), 2),
+             "plantado": (f"{', '.join(P.BAIRROS_FURTO)}: risco ×{P.FATOR_FURTO_BAIRRO:.0f}, e ×{P.FATOR_FURTO_SEM_CAMERA:.0f} "
+                          f"sem câmera a menos de {P.RAIO_CAMERA_M} m; 0 h às 5 h"),
+             "veredito": _veredito(min(razao_bairro, razao_cam)) if acertou else "fraco"}]
+
+
+def padrao_p6(db: Session) -> list[dict]:
+    """Padrão 11 pela tendência prevista (P6) em 90 dias, ao lado da queda observada."""
+    linhas = db.execute(text("""
+        SELECT detalhe->'alvo'->>'nome' regiao, valor, (detalhe->>'atual')::float atual FROM previsao
+        WHERE modulo = 'P6' AND alvo_tipo = 'regiao' AND (detalhe->>'horizonte_dias')::int = 90
+          AND horizonte_inicio = (SELECT max(horizonte_inicio) FROM previsao WHERE modulo = 'P6')""")).mappings().all()
+    if not linhas:
+        return []
+    queda = sorted(((x["valor"] - x["atual"]) * 100, x["regiao"], x["atual"]) for x in linhas)
+    pior, outras = queda[0], [q[0] for q in queda[1:]]
+    try:
+        ini, fim = verificacao.periodo(db)
+        obs = "; observado no histórico: " + verificacao.p11_regiao(db, ini.to_pydatetime(), fim.to_pydatetime())["detalhe"].replace(".", ",")
+    except Exception:
+        obs = ""
+    mediana = float(np.median(outras)) if outras else 0.0
+    ok = pior[1] == P.REGIAO_SEM_PREVENTIVA and pior[0] < mediana - 0.3 and pior[2] < 0.95
+    return [{"padrao": 11, "titulo": "Queda lenta de disponibilidade numa região sem preventiva", "modulo": "P6",
+             "metodo": "Tendência prevista em 90 dias (ETS sobre as médias semanais) e disponibilidade atual, por região",
+             "descoberto": (f"A região {pior[1]} é a que mais cai: está em {_fmt(pior[2] * 100)}% e a tendência prevê "
+                            f"{_fmt(pior[0], 2)} pontos em 90 dias (mediana das outras: {_fmt(mediana, 2)}){obs}"),
+             "efeito": None, "plantado": f"região {P.REGIAO_SEM_PREVENTIVA}",
+             "veredito": "encontrado" if ok else "fraco"}]
+
+
+def padroes_consulta(db: Session) -> list[dict]:
+    itens = []
     plantadas = db.execute(text("SELECT valor FROM estado_preditivo WHERE chave = 'anomalias_plantadas'")).scalar() or []
     ids = {a["equipamento_id"] for a in plantadas}
     achadas = {i for (i,) in db.execute(text("""SELECT DISTINCT equipamento_id FROM alerta
@@ -230,7 +273,7 @@ def padroes_consulta(db: Session) -> list[dict]:
 def _versoes(db: Session) -> str:
     return ",".join(v for (v,) in db.execute(text(
         "SELECT nome || ':' || versao FROM modelo_versao WHERE ativo AND nome IN "
-        "('falha_equipamento_7d', 'ocorrencias_regiao_hora') ORDER BY nome")))
+        "('falha_equipamento_7d', 'ocorrencias_regiao_hora', 'furto_equipamento_30d', 'disponibilidade_regiao') ORDER BY nome")))
 
 
 def calcular(db: Session, f: V.Fontes | None = None) -> dict:
@@ -252,6 +295,13 @@ def calcular(db: Session, f: V.Fontes | None = None) -> dict:
         i2, c2 = padroes_p2(m2, linhas)
         itens += i2
         curvas.update(c2)
+    _, m7 = artefatos.ativo(db, "furto_equipamento_30d")
+    if m7 is not None:
+        from app.preditivo import p7
+
+        corte = V.corte_local(prever.hoje_local())
+        itens += padroes_p7(db, m7, p7.variaveis(f, p7.contexto(db, f), [corte], alvo=False), dict(zip(f.bairros.id, f.bairros.bairro)))
+    itens += padrao_p6(db)
     itens += padroes_consulta(db)
     itens.sort(key=lambda i: i["padrao"])
     return {

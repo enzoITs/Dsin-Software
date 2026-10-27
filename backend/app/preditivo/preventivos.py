@@ -1,6 +1,6 @@
 """Alertas preventivos na central (U3): a previsão vira alerta antes do problema acontecer.
 
-Três regras, sobre o último lote de previsões:
+Quatro regras, sobre o último lote de previsões:
 
 - PREVISAO_RISCO_REGIAO: índice de risco (P3) Alto ou Muito alto em alguma hora das próximas 6 h.
 - PREVISAO_FALHA_EQUIPAMENTO: probabilidade de falha em 7 dias (P1) acima do limite e sem OS aberta
@@ -8,7 +8,8 @@ Três regras, sobre o último lote de previsões:
 - PREVISAO_FALTA_AGENTES: período das próximas 6 h em que a escala atual não cobre a demanda prevista (P4)
   e o reforço recomendado ainda não foi aceito.
 
-PREVISAO_DISPONIBILIDADE depende da tendência de disponibilidade (P6), que fica para a fase 12.
+- PREVISAO_DISPONIBILIDADE: a tendência de disponibilidade (P6) de uma região cruza a meta (ou continua
+  abaixo dela) nos próximos 30 dias.
 
 Cada alerta guarda o id da previsão (a central abre o Cartão de Previsão), para quando está previsto
 e a antecedência. Quando a condição some (o período passou, o risco baixou, a OS foi aberta, o reforço
@@ -28,11 +29,12 @@ from app.models.enums import TipoAlerta as R
 from app.preditivo.variaveis import FUSO
 from app.services import motor
 
-TIPOS = [R.previsao_risco_regiao, R.previsao_falha_equipamento, R.previsao_falta_agentes]
+TIPOS = [R.previsao_risco_regiao, R.previsao_falha_equipamento, R.previsao_falta_agentes, R.previsao_disponibilidade]
 MOTIVO_RESOLVIDO = {
     R.previsao_risco_regiao.value: "O período previsto passou ou o risco previsto baixou",
     R.previsao_falha_equipamento.value: "OS preventiva aberta ou risco de falha previsto baixou",
     R.previsao_falta_agentes.value: "Reforço aceito, período passou ou a falta prevista diminuiu",
+    R.previsao_disponibilidade.value: "A disponibilidade prevista voltou para cima da meta",
 }
 NOME_NIVEL = {"ALTO": "alto", "MUITO_ALTO": "muito alto"}
 
@@ -120,12 +122,30 @@ def falta_agentes(db: Session, agora: datetime, horas: int, minimo: float, fraca
     return saida
 
 
+def _pct(v: float) -> str:
+    return f"{v * 100:.1f}%".replace(".", ",")
+
+
+def disponibilidade(db: Session, agora: datetime, dias: int) -> list[dict]:
+    """Regiões em que a disponibilidade prevista (último P6 de 30 dias) fica abaixo da meta em até `dias` dias."""
+    linhas = db.execute(text("""
+        SELECT p.id, p.regiao_id, r.nome regiao, p.horizonte_inicio inicio, p.horizonte_fim fim, p.valor,
+               (p.detalhe->>'atual')::float atual, (p.detalhe->>'meta')::float meta, p.detalhe->>'cruza_meta_em' cruza,
+               p.detalhe->>'cruza_meta_seguindo_p1_em' cruza_p1, (p.detalhe->>'seguindo_p1')::float seguindo
+        FROM previsao p JOIN regiao r ON r.id = p.regiao_id
+        WHERE p.modulo = 'P6' AND p.alvo_tipo = 'regiao' AND (p.detalhe->>'horizonte_dias')::int = 30
+          AND p.horizonte_inicio = (SELECT max(horizonte_inicio) FROM previsao WHERE modulo = 'P6')
+          AND p.detalhe->>'cruza_meta_em' IS NOT NULL"""), {}).mappings().all()
+    limite = (pd.Timestamp(agora).tz_convert(FUSO) + pd.Timedelta(days=dias)).date().isoformat()
+    return [dict(x) for x in linhas if x["cruza"] <= limite]
+
+
 def verificar(db: Session, agora: datetime | None = None) -> dict:
     cfg = limites.carregar(db)
     agora = agora or datetime.now(timezone.utc)
     horas = cfg["prev_alerta_horas"]
     vistas: set[str] = set()
-    n = {"risco_regiao": 0, "falha_equipamento": 0, "falta_agentes": 0}
+    n = {"risco_regiao": 0, "falha_equipamento": 0, "falta_agentes": 0, "disponibilidade": 0}
 
     for a in risco_regioes(db, agora, horas):
         k = motor.chave(R.previsao_risco_regiao, "regiao", a["regiao"])
@@ -168,6 +188,25 @@ def verificar(db: Session, agora: datetime | None = None) -> dict:
                          correlacionar=False, dados=_dados(x["id"], "P4", x["inicio"], x["fim"], agora,
                                                            falta=x["falta"], demanda=x["demanda"]))
         n["falta_agentes"] += al is not None
+
+    for x in disponibilidade(db, agora, cfg["prev_alerta_disponibilidade_dias"]):
+        k = motor.chave(R.previsao_disponibilidade, "regiao", x["regiao"])
+        vistas.add(k)
+        meta = f"{x['meta'] * 100:.0f}%"
+        cruza = pd.Timestamp(x["cruza"])
+        if x["atual"] < x["meta"]:
+            msg = (f"Região {x['regiao']}: disponibilidade já abaixo da meta de {meta} ({_pct(x['atual'])}) e "
+                   f"prevista em {_pct(x['valor'])} daqui a 30 dias")
+        else:
+            msg = (f"Previsto para {cruza:%d/%m}: disponibilidade da região {x['regiao']} abaixo da meta de {meta} "
+                   f"(hoje {_pct(x['atual'])}, em 30 dias {_pct(x['valor'])})")
+        msg += (f". Seguindo as preventivas do P1, ficaria em {_pct(x['seguindo'])}" if x["seguindo"] else "")
+        lon, lat = _ponto_regiao(db, x["regiao_id"])
+        inicio = max(cruza.tz_localize(FUSO).tz_convert("UTC").to_pydatetime(), agora)
+        al = motor.abrir(db, R.previsao_disponibilidade, k, msg, regiao=x["regiao"], lon=lon, lat=lat, agora=agora,
+                         correlacionar=False, dados=_dados(x["id"], "P6", inicio, x["fim"], agora,
+                                                           previsto=round(x["valor"], 4), meta=x["meta"]))
+        n["disponibilidade"] += al is not None
 
     resolvidas = 0
     for a in db.scalars(select(Alerta).where(Alerta.tipo.in_(TIPOS), Alerta.resolvido_em.is_(None))).unique():

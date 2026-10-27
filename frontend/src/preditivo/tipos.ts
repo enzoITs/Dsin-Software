@@ -1,6 +1,6 @@
 /** Contrato de previsão da Parte 3 (o que a API devolve e o Cartão de Previsão exibe). */
 
-export type Modulo = "P1" | "P2" | "P3" | "P4";
+export type Modulo = "P1" | "P2" | "P3" | "P4" | "P6" | "P7" | "P8";
 
 export interface Fator { descricao: string; efeito: number; grupo?: string }
 
@@ -183,4 +183,49 @@ export interface RespostaCopiloto {
 export interface Briefing {
   id: number; data: string; titulo: string; gerado_em: string; gerado_por: string; rodape: string; markdown: string;
   secoes: { id: string; titulo: string; itens: { texto: string; previsao_id: number | null }[] }[];
+}
+
+// ---------------------------------------------------------------- fase 12: P6, P7, P8 e C2
+
+export interface PontoDisp { dia: string; valor: number; inferior?: number; superior?: number; seguindo_p1?: number }
+export interface ItemDisponibilidade {
+  nome: string; alvo_tipo: "regiao" | "cidade" | "tipo"; regiao_id: number | null; atual: number; meta: number; em_servico: number;
+  previsto_30: number; previsto_90: number; seguindo_p1_30: number; seguindo_p1_90: number; nivel_30: string; nivel_90: string;
+  cartao_30: Cartao; cartao_90: Cartao; historico: PontoDisp[]; previsto: PontoDisp[]; cruza_meta_em: string | null;
+  cruza_meta_seguindo_p1_em: string | null; falhas_evitaveis: number; dias_conserto: number;
+}
+export interface Disponibilidade { gerado_para: string; grupo: string; meta: number; eficacia_preventiva: number; selo: Selo; itens: ItemDisponibilidade[] }
+
+export interface TipoCarga { tipo: string; nome: string; corretivas: number; pendentes: number; preventivas: number; tecnicos_dia: number; pecas: number }
+export interface SemanaCarga {
+  semana: number; inicio: string; fim: string; rotulo: string; tecnicos_dia: number; faixa: [number, number]; nivel: string;
+  normal_tecnicos_dia: number; corretivas: number; pendentes: number; preventivas: number; preventivas_atrasadas: number;
+  pecas: number; por_tipo: TipoCarga[]; cartao: Cartao;
+}
+export interface Manutencao {
+  origem: string; jornada_h: number; selo: Selo; itens: { nome: string; alvo_tipo: string; regiao_id: number | null; semanas: SemanaCarga[] }[];
+}
+
+export interface ItemFurto {
+  previsao_id: number; equipamento_id: number; codigo: string; tipo: string; regiao: string | null; bairro: string | null;
+  situacao: string; probabilidade: number; nivel: string; vezes_a_media: number; dist_camera_m: number; fatores: Fator[];
+  acao: Acao | null; decisao: string | null; lon: number | null; lat: number | null;
+}
+export interface RiscoFurto {
+  gerado_para: string; totais_por_nivel: Record<string, number>; furtos_esperados: number; selo: Selo; aviso: string;
+  por_bairro: { bairro: string; regiao: string; n: number; esperados: number; alto: number }[]; itens: ItemFurto[];
+}
+
+export interface SugestaoExpansao {
+  ordem: number; lon: number; lat: number; bairro: string; regiao: string; camera_mais_proxima_m: number; ocorrencias_mes: number;
+  ponderadas_mes: number; por_categoria: { categoria: string; nome: string; por_mes: number }[]; furtos_evitados_30d: number;
+  furtos_evitados_ano: number; equipamentos_perto: number; pontuacao: number; motivos: string[];
+}
+export interface Expansao {
+  o_que_preve: string; como_ajuda: string; dados_considerados: string[]; metodo: string; criterio: string;
+  criterios: Record<string, string>; sugestoes: SugestaoExpansao[]; mensagem?: string;
+  resumo: null | {
+    ocorrencias_90d: number; cameras_operando: number; alcance_m: number; cobertura_hoje_pct: number | null;
+    cobertura_com_sugestoes_pct: number | null; novas_cobertas_mes: number; furtos_evitados_ano: number;
+  };
 }

@@ -2,8 +2,8 @@
 
 Uso:
   python -m app.preditivo.treinar --baselines   avalia os baselines no backtest de origem móvel e grava
-  python -m app.preditivo.treinar --todos       baselines, P1 (risco de falha), P2 (ocorrências), P3 (índice), P4 (equipes)
-                                                e as previsões em lote
+  python -m app.preditivo.treinar --todos       baselines, P1 (risco de falha), P2 (ocorrências), P3 (índice), P4 (equipes),
+                                                P6 (disponibilidade), P7 (furto), P8 (carga de manutenção) e as previsões em lote
 
 Cada avaliação vira uma linha em `modelo_versao` (métricas e período) e uma linha por corte em
 `backtest_resultado`. O progresso fica em `estado_preditivo` ("treino"), para a interface mostrar.
@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.domain import limites
 from app.models import BacktestResultado, EstadoPreditivo, ModeloVersao
-from app.preditivo import artefatos, backtest, p1, p2, planejamento, prever
+from app.preditivo import artefatos, backtest, diarias, p1, p2, p6, p7, planejamento, prever
 from app.preditivo import variaveis as V
 
 
@@ -127,6 +127,15 @@ def treinar_p1(db: Session, f: V.Fontes, log=print) -> dict:
             f"(baseline {b['precisao_50']:.1%})")
         saida[f"P1_{janela}d"] = {"modelo": {k: v for k, v in m.items() if k != "calibracao"},
                                   "baseline": {k: v for k, v in b.items() if k != "calibracao"}}
+        if janela == 30:
+            r8 = diarias.avaliar_p8(r["previsoes"])
+            registrar(db, nome="carga_manutencao", modulo="P8", fim=fim, inicio=modelo.treino_cortes[0], metricas=r8["modelo"],
+                      metricas_baseline=r8["baseline"], por_corte=r8["por_corte"],
+                      parametros={"metodo": "soma das probabilidades de falha de P1 por tipo e região, mais as preventivas do plano",
+                                  "horas": {k: v for k, v in cfg.items() if k.startswith("prev_p8_")}})
+            log(f"[treino] P8: falhas em 30 dias por tipo e região, erro médio {r8['modelo']['mae']:.2f} "
+                f"(média histórica do tipo {r8['baseline']['mae']:.2f})")
+            saida["P8"] = r8["modelo"]
     return saida
 
 
@@ -156,6 +165,49 @@ def treinar_p2(db: Session, f: V.Fontes, log=print) -> dict:
     return {"modelo": {k: v for k, v in m.items() if k != "por_regiao"}, "baseline": {k: v for k, v in b.items() if k != "por_regiao"}}
 
 
+def treinar_p6(db: Session, f: V.Fontes, log=print) -> dict:
+    """Backtest do ETS de disponibilidade (30 e 90 dias). Não há artefato: o ETS é ajustado na hora da previsão."""
+    cfg = limites.carregar(db, forcar=True)
+    fim = fim_dos_dados(db)
+    progresso(db, etapa="P6: tendência de disponibilidade")
+    serie = V.disponibilidade_diaria(f, fim - timedelta(days=cfg["prev_backtest_dias"] + 90 + p6.DIAS_HISTORICO), fim)
+    r = p6.avaliar(serie, fim, cfg)
+    m, b = r["modelo"], r["baseline"]
+    registrar(db, nome="disponibilidade_regiao", modulo="P6", fim=fim, inicio=fim - timedelta(days=p6.DIAS_HISTORICO),
+              metricas={**m, "q90": r["q90"], "por_regiao": r["por_regiao"]}, metricas_baseline=b, por_corte=r["por_corte"],
+              parametros={"metodo": "ETS com tendência amortecida sobre médias semanais", "semanas": p6.SEMANAS,
+                          "horizontes_dias": list(p6.HORIZONTES)})
+    log(f"[treino] P6: erro médio em 30 dias {m['mae_pp']:.2f} pp (baseline {b['mae_pp']:.2f}); "
+        f"em 90 dias {m['mae_pp_90']:.2f} pp (baseline {b['mae_pp_90']:.2f})")
+    return {"modelo": m, "baseline": b}
+
+
+def treinar_p7(db: Session, f: V.Fontes, log=print) -> dict:
+    cfg = limites.carregar(db, forcar=True)
+    fim = fim_dos_dados(db)
+    progresso(db, etapa="P7: variáveis de furto")
+    ctx = p7.contexto(db, f)
+    df = p7.variaveis(f, ctx, p7.cortes_treino(fim, cfg))
+    progresso(db, etapa="P7: backtest")
+    r = p7.avaliar(f, ctx, df, fim, cfg)
+    progresso(db, etapa="P7: modelo final")
+    recente = df[df.corte > V.corte_local(fim) - pd.Timedelta(weeks=cfg["prev_treino_semanas"])]
+    modelo = p7.ajustar(recente)
+    m, b = r["modelo"], r["baseline"]
+    metricas = {**m, "importancia": p7.importancia_global(modelo, recente.sample(min(len(recente), 20_000), random_state=0))}
+    mv = registrar(db, nome="furto_equipamento_30d", modulo="P7", fim=fim, inicio=modelo.treino_cortes[0], metricas=metricas,
+                   metricas_baseline=b, por_corte=r["por_corte"],
+                   parametros={"lgbm": p7.PARAMS_LGBM, "janela_dias": p7.JANELA, "variaveis": p7.COLUNAS,
+                               "linhas_treino": len(recente)})
+    mv.caminho_artefato = artefatos.salvar(modelo, mv.nome, mv.versao)
+    db.commit()
+    def f3(v):
+        return "—" if v is None else f"{v:.3f}"  # sem nenhum furto no período, a AUC fica indefinida
+    log(f"[treino] P7: AUC {f3(m['auc'])} (baseline {f3(b['auc'])}); precisão nos 50 primeiros {m['precisao_50']:.1%} "
+        f"(baseline {b['precisao_50']:.1%}, taxa base {m['taxa_base']:.2%})")
+    return {"modelo": {k: v for k, v in m.items() if k != "calibracao"}, "baseline": {k: v for k, v in b.items() if k != "calibracao"}}
+
+
 def treinar(todos: bool = True, so_baselines: bool = False, log=print) -> dict:
     t0 = time.time()
     with SessionLocal() as db:
@@ -167,8 +219,12 @@ def treinar(todos: bool = True, so_baselines: bool = False, log=print) -> dict:
             if not so_baselines:
                 res["P1"] = treinar_p1(db, f, log)
                 res["P2"] = treinar_p2(db, f, log)
+                res["P6"] = treinar_p6(db, f, log)
+                res["P7"] = treinar_p7(db, f, log)
                 progresso(db, etapa="Previsões em lote")
                 n = prever.prever_p1(db, f)
+                n678 = diarias.lote(db, f)
+                log(f"[treino] previsões diárias: {n678['p6']} de P6, {n678['p7']} de P7 e {n678['p8']} de P8")
                 n23 = prever.prever_p2_p3(db, f)
                 log(f"[treino] {n} previsões de P1, {n23['p2']} de P2 e {n23['p3']} de P3 gravadas")
                 progresso(db, etapa="Planejamento de equipes")
@@ -182,6 +238,44 @@ def treinar(todos: bool = True, so_baselines: bool = False, log=print) -> dict:
             progresso(db, situacao="erro", mensagem=f"{type(exc).__name__}: {exc}")
             raise
     log(f"[treino] concluído em {time.time() - t0:.1f}s")
+    return res
+
+
+NOVOS = ("disponibilidade_regiao", "furto_equipamento_30d", "carga_manutencao")
+
+
+def faltando(db: Session) -> list[str]:
+    """Modelos da fase 12 que ainda não existem num banco treinado antes dela."""
+    tem = set(db.scalars(select(ModeloVersao.nome).where(ModeloVersao.ativo, ModeloVersao.nome.in_(NOVOS))))
+    return [n for n in NOVOS if n not in tem]
+
+
+def treinar_novos(log=print) -> dict:
+    """Treina só o que falta (P6, P7 e o P8, que vem do backtest de P1) e refaz as previsões diárias."""
+    t0 = time.time()
+    with SessionLocal() as db:
+        falta = faltando(db)
+        if not falta:
+            return {}
+        progresso(db, situacao="rodando", etapa="Carregando dados", inicio=datetime.now(timezone.utc).isoformat(),
+                  mensagem=None, pid=os.getpid())
+        try:
+            f = V.carregar(db)
+            res = {}
+            if "disponibilidade_regiao" in falta:
+                res["P6"] = treinar_p6(db, f, log)
+            if "furto_equipamento_30d" in falta:
+                res["P7"] = treinar_p7(db, f, log)
+            if "carga_manutencao" in falta:
+                res["P1"] = treinar_p1(db, f, log)
+                prever.prever_p1(db, f)
+            progresso(db, etapa="Previsões em lote")
+            res["lote"] = diarias.lote(db, f)
+            progresso(db, situacao="pronto", etapa="Concluído", segundos=round(time.time() - t0, 1))
+        except Exception as exc:
+            db.rollback()
+            progresso(db, situacao="erro", mensagem=f"{type(exc).__name__}: {exc}")
+            raise
     return res
 
 

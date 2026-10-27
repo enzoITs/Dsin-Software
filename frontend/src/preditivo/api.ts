@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "../api/client";
 import type {
   Acertometro, Amanha, CenarioParams, CenarioSalvo, Cartao, DetalheRegiao, EstadoTreino, Modelos, OpcoesCenario, PadroesDescobertos, Plano,
-  Briefing, Ranking, Recomendacao, RespostaCopiloto, ResultadoCenario, Retorno,
+  Briefing, Ranking, Recomendacao, RespostaCopiloto, ResultadoCenario, Retorno, Disponibilidade, Manutencao, RiscoFurto, Expansao,
 } from "./tipos";
 
 export const useAmanha = () =>
@@ -22,7 +22,7 @@ export const useRanking = (params: Record<string, string | number | string[] | u
              placeholderData: keepPreviousData, retry: false });
 
 export const useRiscoEquipamento = (id: number) =>
-  useQuery({ queryKey: ["prev", "risco-eq", id], queryFn: () => api<{ cartoes: Cartao[]; mensagem: string | null }>(`/equipamentos/${id}/risco`),
+  useQuery({ queryKey: ["prev", "risco-eq", id], queryFn: () => api<{ cartoes: Cartao[]; furto: Cartao | null; mensagem: string | null }>(`/equipamentos/${id}/risco`),
              retry: false });
 
 export const usePlano = () => useQuery({ queryKey: ["prev", "plano"], queryFn: () => api<Plano>("/planejamento/equipes"), retry: false });
@@ -156,3 +156,19 @@ export function useGerarBriefing() {
     onSuccess: (b) => qc.setQueryData(["prev", "briefing"], b),
   });
 }
+
+// Fase 12
+export const useDisponibilidade = (grupo: "regiao" | "tipo") =>
+  useQuery({ queryKey: ["prev", "disp", grupo], queryFn: () => api<Disponibilidade>("/tendencias/disponibilidade", { params: { grupo } }),
+             retry: false, placeholderData: keepPreviousData });
+
+export const useManutencao = () =>
+  useQuery({ queryKey: ["prev", "manutencao"], queryFn: () => api<Manutencao>("/tendencias/manutencao"), retry: false });
+
+export const useRiscoFurto = (params: Record<string, string | number | string[] | undefined>) =>
+  useQuery({ queryKey: ["prev", "furto", params], queryFn: () => api<RiscoFurto>("/furtos/risco", { params }),
+             placeholderData: keepPreviousData, retry: false });
+
+export const useExpansao = (criterio: string, n: number) =>
+  useQuery({ queryKey: ["prev", "expansao", criterio, n], queryFn: () => api<Expansao>("/expansao/sugestoes", { params: { criterio, n } }),
+             placeholderData: keepPreviousData, retry: false, staleTime: 5 * 60_000 });

@@ -26,6 +26,8 @@ NOMES_GRUPO = {
     "calendario": "Hora, dia da semana e feriados", "padrao": "Padrão das últimas semanas", "agentes": "Agentes na escala",
     "evento": "Eventos programados", "clima": "Previsão do tempo", "recente": "Últimas horas",
     "horizonte": "Antecedência da previsão", "equipamentos": "Equipamentos fora de operação",
+    "historico_local": "Furtos no bairro e a menos de 500 m", "vandalismo": "Vandalismo de madrugada no bairro",
+    "cobertura": "Distância até a câmera mais próxima",
 }
 
 MODULOS = [
@@ -41,6 +43,20 @@ MODULOS = [
      "titulo": "Ocorrências por região e hora (72 h)",
      "o_que_preve": "Quantas ocorrências cada região terá em cada hora das próximas 72 horas, com faixa de 90%",
      "metodo": "LightGBM com perda de Poisson por bairro e hora; intervalo conformal; comparado com a média da mesma hora e dia da semana",
+     "metrica": "mae", "menor_melhor": True},
+    {"modulo": "P6", "nome": "disponibilidade_regiao", "baseline": "baseline_disponibilidade_30d",
+     "titulo": "Tendência de disponibilidade (30 e 90 dias)",
+     "o_que_preve": "A disponibilidade dos equipamentos fixos de cada região, da cidade e de cada tipo daqui a 30 e 90 dias",
+     "metodo": "Suavização exponencial (ETS) com tendência amortecida sobre médias semanais; comparada com a última média móvel de 30 dias",
+     "metrica": "mae_pp", "menor_melhor": True},
+    {"modulo": "P7", "nome": "furto_equipamento_30d", "baseline": None, "titulo": "Risco de furto em 30 dias",
+     "o_que_preve": "Probabilidade de cada equipamento ser furtado nos próximos 30 dias (lugares e equipamentos, nunca pessoas)",
+     "metodo": "LightGBM com regularização forte (evento raro); comparado com a taxa histórica de furto do tipo",
+     "metrica": "auc", "menor_melhor": False},
+    {"modulo": "P8", "nome": "carga_manutencao", "baseline": None, "titulo": "Carga de manutenção (4 semanas)",
+     "o_que_preve": "Corretivas esperadas e preventivas programadas por semana, região e tipo, em técnicos-dia e peças",
+     "metodo": "Soma das probabilidades de falha de P1 e do plano de preventivas; avaliada pelas falhas por tipo e região "
+               "no backtest de P1, contra a taxa histórica do tipo",
      "metrica": "mae", "menor_melhor": True},
 ]
 
@@ -76,8 +92,10 @@ def _modelo_json(db: Session, m: dict) -> dict | None:
     imp = met.get("importancia") or {}
     total = sum(imp.values()) or 1
     resumo = {kk: met.get(kk) for kk in ("auc", "brier", "precisao_50", "taxa_base", "mae", "erro_pct", "mae_pico", "cobertura_90",
+                                         "mae_pp", "mae_pp_90",
                                          "mae_por_horizonte", "por_regiao", "n") if met.get(kk) is not None}
-    resumo_base = {kk: base.get(kk) for kk in ("auc", "brier", "precisao_50", "mae", "erro_pct", "mae_pico", "por_regiao")
+    resumo_base = {kk: base.get(kk) for kk in ("auc", "brier", "precisao_50", "mae", "erro_pct", "mae_pico", "por_regiao",
+                                               "mae_pp", "mae_pp_90")
                    if base.get(kk) is not None}
     return {
         **{kk: m[kk] for kk in ("modulo", "nome", "titulo", "o_que_preve", "metodo")},

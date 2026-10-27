@@ -14,9 +14,11 @@ from sqlalchemy.orm import Session
 from app.models import ModeloVersao, Previsao, Recomendacao
 from app.preditivo import avaliacao
 
-UNIDADE = {"P1": "probabilidade", "P2": "ocorrências", "P3": "índice", "P4": "equipes"}
+UNIDADE = {"P1": "probabilidade", "P2": "ocorrências", "P3": "índice", "P4": "equipes", "P6": "disponibilidade",
+           "P7": "probabilidade", "P8": "técnicos-dia"}
 NOME_MODULO = {"P1": "Risco de falha de equipamento", "P2": "Ocorrências por região e hora", "P3": "Índice de risco da região",
-               "P4": "Reforço de equipes"}
+               "P4": "Reforço de equipes", "P6": "Tendência de disponibilidade", "P7": "Risco de furto de equipamento",
+               "P8": "Carga de manutenção"}
 
 
 def _fmt(v: float, casas: int = 2) -> str:
@@ -36,6 +38,27 @@ def selo(mv: ModeloVersao | None, modulo: str) -> dict:
                  f"{pb * 50:.0f}. Ordena {ganho:.0f}% melhor (AUC {_fmt(m['auc'])} × {_fmt(b['auc'])})"
                  if p is not None and pb is not None and ganho is not None else "Sem avaliação completa")
         detalhe = {"metrica": "AUC", "modelo": m.get("auc"), "baseline": b.get("auc"), "precisao_50": p, "precisao_50_baseline": pb}
+    elif modulo == "P6":
+        ganho = avaliacao.ganho(m.get("mae_pp"), b.get("mae_pp"), menor_melhor=True)
+        g90 = avaliacao.ganho(m.get("mae_pp_90"), b.get("mae_pp_90"), menor_melhor=True)
+        texto = (f"Erra {ganho:.0f}% menos que a média móvel de 30 dias: erro médio de {_fmt(m['mae_pp'])} ponto percentual "
+                 f"em 30 dias, contra {_fmt(b['mae_pp'])}" + (f"; em 90 dias, {g90:.0f}% menos" if g90 is not None else "")
+                 if ganho is not None else "Sem avaliação completa")
+        detalhe = {"metrica": "erro médio em pontos percentuais (30 dias)", "modelo": m.get("mae_pp"), "baseline": b.get("mae_pp"),
+                   "modelo_90": m.get("mae_pp_90"), "baseline_90": b.get("mae_pp_90")}
+    elif modulo == "P7":
+        ganho = avaliacao.ganho(m.get("auc"), b.get("auc"), menor_melhor=False)
+        vezes = (m.get("precisao_50") or 0) / m["taxa_base"] if m.get("taxa_base") else None
+        texto = (f"Ordena {ganho:.0f}% melhor que a taxa histórica de furto do tipo (AUC {_fmt(m['auc'])} × {_fmt(b['auc'])})"
+                 + (f". Entre os 50 que o modelo aponta, furto é {vezes:.0f} vezes mais comum que na média" if vezes else "")
+                 if ganho is not None else "Sem avaliação completa")
+        detalhe = {"metrica": "AUC", "modelo": m.get("auc"), "baseline": b.get("auc"), "precisao_50": m.get("precisao_50"),
+                   "precisao_50_baseline": b.get("precisao_50"), "taxa_base": m.get("taxa_base")}
+    elif modulo == "P8":
+        ganho = avaliacao.ganho(m.get("mae"), b.get("mae"), menor_melhor=True)
+        texto = (f"Erra {ganho:.0f}% menos que a média histórica do tipo: erro médio de {_fmt(m['mae'])} falhas por tipo e "
+                 f"região em 30 dias, contra {_fmt(b['mae'])}" if ganho is not None else "Sem avaliação completa")
+        detalhe = {"metrica": "erro médio de falhas por tipo e região (30 dias)", "modelo": m.get("mae"), "baseline": b.get("mae")}
     else:
         ganho = avaliacao.ganho(m.get("mae"), b.get("mae"), menor_melhor=True)
         texto = (f"Erra {ganho:.0f}% menos que a média histórica: erro médio de {_fmt(m['mae'])} ocorrências por região e hora, "

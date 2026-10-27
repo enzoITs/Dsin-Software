@@ -335,13 +335,18 @@ COLUNAS_BAIRRO = [
 # ---------------------------------------------------------------- disponibilidade diária (P6)
 
 
-def disponibilidade_diaria(f: Fontes, inicio: date, fim: date) -> pd.DataFrame:
-    """Disponibilidade dos equipamentos fixos (operacionais ÷ em serviço) à meia-noite de cada dia, por região.
+def disponibilidade_diaria(f: Fontes, inicio: date, fim: date, por: str = "regiao") -> pd.DataFrame:
+    """Disponibilidade dos equipamentos fixos (operacionais ÷ em serviço) à meia-noite de cada dia, por região
+    (ou por outra coluna do equipamento, como `prefixo`), mais a cidade inteira. A coluna de saída se chama `regiao`.
 
     Em serviço: operacional, mau funcionamento, em manutenção ou furtado (instalado e não desativado).
     """
     em_servico = {"operacional", "mau_funcionamento", "em_manutencao", "furtado"}
-    h = f.historico.merge(f.equipamentos[["id", "regiao", "movel"]], left_on="equipamento_id", right_on="id")
+    eq = f.equipamentos[["id", "regiao", "movel"] + ([por] if por != "regiao" else [])]
+    if por != "regiao":
+        eq = eq.drop(columns="regiao").rename(columns={por: "regiao"}).assign(regiao=lambda x: x.regiao.astype(str))
+        eq = eq[f.equipamentos.regiao.notna().to_numpy()]
+    h = f.historico.merge(eq, left_on="equipamento_id", right_on="id")
     h = h[~h.movel & h.regiao.notna()]
     h = h.assign(
         d_op=(h.nova == "operacional").astype(int) - (h.anterior == "operacional").astype(int),

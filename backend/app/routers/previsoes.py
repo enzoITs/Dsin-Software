@@ -225,7 +225,11 @@ def risco_equipamento(equipamento_id: int, db: DB):
     cache: dict = {}
     ps = db.scalars(select(Previsao).where(Previsao.modulo == "P1", Previsao.alvo_id == equipamento_id,
                                            Previsao.horizonte_inicio == inicio).order_by(Previsao.horizonte_fim)).all()
+    ini7 = db.scalar(select(func.max(Previsao.horizonte_inicio)).where(Previsao.modulo == "P7"))
+    furto = db.scalar(select(Previsao).where(Previsao.modulo == "P7", Previsao.alvo_id == equipamento_id,
+                                             Previsao.horizonte_inicio == ini7)) if ini7 else None
     return {"equipamento_id": equipamento_id, "cartoes": [cartoes.cartao(p, db, cache) for p in ps],
+            "furto": cartoes.cartao(furto, db, cache) if furto else None,
             "mensagem": None if ps else "Sem previsão para este equipamento (só equipamentos em operação recebem previsão)."}
 
 
