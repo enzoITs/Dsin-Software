@@ -227,3 +227,15 @@ class Cenario(Base):
     resultado: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     criado_por: Mapped[str | None] = mapped_column(String(120))
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Briefing(Base):
+    """Briefing diário (C4): gerado às 6 h, um por dia, guardado como saiu (seções e Markdown)."""
+
+    __tablename__ = "briefing"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    data: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    conteudo_md: Mapped[str] = mapped_column(Text)
+    dados: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    gerado_por: Mapped[str] = mapped_column(String(120), default="agendador")
+    gerado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

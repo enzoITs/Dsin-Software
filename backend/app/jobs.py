@@ -5,7 +5,7 @@
   escalonamento) e, a cada minuto, um instantâneo dos indicadores para a linha do tempo.
 - A cada 5 min: detectores de anomalias da Parte 3 (P5) e alertas preventivos (PREVISAO_*).
 - De hora em hora (minuto 3): previsões P2, P3 e P4, alertas preventivos e acertômetro.
-- Às 5 h (horário local): previsões P1 de risco de falha.
+- Às 5 h (horário local): previsões P1 de risco de falha. Às 6 h: briefing diário.
 - No start: treina em segundo plano se ainda não há modelo; refaz lotes atrasados.
 """
 
@@ -75,6 +75,15 @@ def anomalias() -> dict:
     return res
 
 
+def briefing_do_dia() -> dict:
+    from app.preditivo import briefing
+
+    with SessionLocal() as db:
+        b = briefing.gerar(db)
+    log.info("briefing de %s gerado", b.data)
+    return {"data": str(b.data)}
+
+
 def previsoes_no_start() -> dict:
     """Treina se não há modelo; senão refaz o que ficou atrasado enquanto a API esteve parada."""
     import pandas as pd
@@ -96,6 +105,11 @@ def previsoes_no_start() -> dict:
         res["dia"] = servico.lote_dia()
     if ultima_p2 is None or pd.Timestamp(ultima_p2) < agora - pd.Timedelta(hours=1):
         res["hora"] = servico.lote_hora()
+    # Briefing de hoje, se a API subiu depois das 6 h e ele ainda não existe
+    with SessionLocal() as db:
+        tem = db.scalar(text("SELECT count(*) FROM briefing WHERE data = :d"), {"d": prever.hoje_local()})
+    if not tem and agora.tz_convert(V.FUSO).hour >= 6:
+        res["briefing"] = briefing_do_dia()
     return res
 
 
@@ -105,6 +119,8 @@ def iniciar() -> None:
     scheduler.add_job(anomalias, "interval", minutes=5, id="anomalias", max_instances=1, coalesce=True)
     scheduler.add_job(servico.lote_hora, "cron", minute=3, id="previsoes_hora", max_instances=1, coalesce=True)
     scheduler.add_job(servico.lote_dia, "cron", hour=5, minute=10, timezone="America/Sao_Paulo", id="previsoes_dia",
+                      max_instances=1, coalesce=True)
+    scheduler.add_job(briefing_do_dia, "cron", hour=6, minute=0, timezone="America/Sao_Paulo", id="briefing",
                       max_instances=1, coalesce=True)
     scheduler.add_job(previsoes_no_start, "date", run_date=datetime.now(timezone.utc) + timedelta(seconds=20),
                       id="previsoes_no_start")

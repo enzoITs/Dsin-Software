@@ -20,6 +20,7 @@ from app.models.entidades import (  # noqa: F401
 )
 from app.models.preditivo import (  # noqa: F401
     BacktestResultado,
+    Briefing,
     Calendario,
     CategoriaOcorrencia,
     Cenario,

@@ -20,6 +20,8 @@ const Planejamento = lazy(() => import("./pages/Planejamento"));
 const Confianca = lazy(() => import("./pages/Confianca"));
 const Cenarios = lazy(() => import("./pages/Cenarios"));
 const Decisoes = lazy(() => import("./pages/Decisoes"));
+const Copiloto = lazy(() => import("./pages/Copiloto"));
+const BriefingDia = lazy(() => import("./pages/BriefingDia"));
 
 export default function App() {
   return (
@@ -34,6 +36,8 @@ export default function App() {
           <Route path="previsao/confianca" element={<Suspense fallback={<Carregando />}><Confianca /></Suspense>} />
           <Route path="previsao/cenarios" element={<Suspense fallback={<Carregando />}><Cenarios /></Suspense>} />
           <Route path="previsao/decisoes" element={<Suspense fallback={<Carregando />}><Decisoes /></Suspense>} />
+          <Route path="previsao/copiloto" element={<Suspense fallback={<Carregando />}><Copiloto /></Suspense>} />
+          <Route path="previsao/briefing" element={<Suspense fallback={<Carregando />}><BriefingDia /></Suspense>} />
           <Route index element={<Inventario />} />
           <Route path="equipamentos/novo" element={<CadastroEquipamento />} />
           <Route path="equipamentos/:id" element={<FichaEquipamento />} />

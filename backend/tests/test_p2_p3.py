@@ -72,10 +72,12 @@ def test_p2_supera_o_baseline_e_grava_cartoes(banco_gerado):
         assert m["mae"] < b["mae"], (m["mae"], b["mae"])
         assert m["erro_pct"] < b["erro_pct"]
         assert 0.8 <= m["cobertura_90"] <= 0.97
+        # Só o lote mais recente: outro teste pode ter treinado de novo numa hora diferente
+        ult = "detalhe->>'origem' = (SELECT max(detalhe->>'origem') FROM previsao WHERE modulo = 'P2')"
         p2 = c.execute(text("SELECT valor, faixa_inferior, faixa_superior, fatores, dados_considerados, detalhe "
-                            "FROM previsao WHERE modulo = 'P2'")).all()
+                            f"FROM previsao WHERE modulo = 'P2' AND {ult}")).all()
         p3_ = c.execute(text("SELECT valor, faixa_inferior, faixa_superior, nivel, fatores, detalhe "
-                             "FROM previsao WHERE modulo = 'P3'")).all()
+                             f"FROM previsao WHERE modulo = 'P3' AND {ult}")).all()
     regioes = 5
     assert len(p2) == regioes * 72
     for v, lo, hi, fat, dados, det in p2:

@@ -5,12 +5,14 @@ import type { Perfil } from "../api/client";
 
 const LINKS = [
   { to: "/central", rotulo: "Central de operações" },
+  { to: "/previsao/briefing", rotulo: "Briefing" },
   { to: "/amanha", rotulo: "Amanhã" },
   { to: "/previsao/equipamentos", rotulo: "Risco de falha" },
   { to: "/previsao/equipes", rotulo: "Equipes" },
   { to: "/previsao/cenarios", rotulo: "Cenários" },
   { to: "/previsao/decisoes", rotulo: "Decisões" },
   { to: "/previsao/confianca", rotulo: "Confiança" },
+  { to: "/previsao/copiloto", rotulo: "Copiloto" },
   { to: "/", rotulo: "Inventário", fim: true },
   { to: "/equipamentos/novo", rotulo: "Cadastrar" },
   { to: "/agentes", rotulo: "Agentes" },

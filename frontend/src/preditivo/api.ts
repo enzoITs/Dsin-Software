@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "../api/client";
 import type {
   Acertometro, Amanha, CenarioParams, CenarioSalvo, Cartao, DetalheRegiao, EstadoTreino, Modelos, OpcoesCenario, PadroesDescobertos, Plano,
-  Ranking, Recomendacao, ResultadoCenario, Retorno,
+  Briefing, Ranking, Recomendacao, RespostaCopiloto, ResultadoCenario, Retorno,
 } from "./tipos";
 
 export const useAmanha = () =>
@@ -138,3 +138,21 @@ export const useRetorno = (dias: number) =>
 export const usePadroes = () =>
   useQuery({ queryKey: ["prev", "padroes"], queryFn: () => api<PadroesDescobertos>("/modelos/padroes-descobertos"), retry: false,
              staleTime: 10 * 60_000 });
+
+export const usePerguntasProntas = () =>
+  useQuery({ queryKey: ["prev", "copiloto", "prontas"], queryFn: () => api<{ ia_disponivel: boolean; perguntas: { id: string; texto: string }[] }>("/copiloto/perguntas-prontas"),
+             staleTime: 5 * 60_000 });
+
+export const usePerguntar = () =>
+  useMutation({ mutationFn: (b: { pergunta?: string; pronta?: string; historico?: { papel: "user" | "assistant"; texto: string }[] }) =>
+    api<RespostaCopiloto>("/copiloto/perguntar", { method: "POST", body: b }) });
+
+export const useBriefing = () => useQuery({ queryKey: ["prev", "briefing"], queryFn: () => api<Briefing>("/briefing/hoje"), retry: false });
+
+export function useGerarBriefing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<Briefing>("/briefing/gerar", { method: "POST" }),
+    onSuccess: (b) => qc.setQueryData(["prev", "briefing"], b),
+  });
+}

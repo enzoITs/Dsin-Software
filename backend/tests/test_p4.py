@@ -97,16 +97,18 @@ def test_planejamento_gravado_no_banco_gerado(banco_gerado):
     with Session(eng) as db:
         planos = planejamento.planejar(db)
         res = planejamento.resumo_json(planos)
-        gravado = planejamento.gravar(db, planos, planejamento.ultima_origem(db))
+        origem = planejamento.ultima_origem(db)
+        gravado = planejamento.gravar(db, planos, origem)
     assert len(res["periodos"]) >= 12
     assert res["nao_coberto_depois"] <= res["nao_coberto_antes"]
     for p in res["periodos"]:
         for m in p["movimentos"]:
             assert m["de"] != m["para"]
     with eng.connect() as c:
-        n = c.execute(text("SELECT count(*) FROM previsao WHERE modulo = 'P4'")).scalar()
+        n = c.execute(text("SELECT count(*) FROM previsao WHERE modulo = 'P4' AND detalhe->>'origem' = :o"), {"o": origem}).scalar()
         recs = c.execute(text("SELECT texto, parametros, impacto_estimado FROM recomendacao WHERE estado = 'pendente'")).all()
-        cartoes = c.execute(text("SELECT fatores, dados_considerados, detalhe FROM previsao WHERE modulo = 'P4'")).all()
+        cartoes = c.execute(text("SELECT fatores, dados_considerados, detalhe FROM previsao WHERE modulo = 'P4' "
+                                 "AND detalhe->>'origem' = :o"), {"o": origem}).all()
     assert n == gravado["previsoes"] == 5 * len(res["periodos"])
     assert len(recs) == gravado["recomendacoes"]
     for t, par, imp in recs:

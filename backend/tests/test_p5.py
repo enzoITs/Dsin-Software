@@ -110,7 +110,10 @@ def test_anomalias_plantadas_encontradas(banco_gerado):
     with Session(eng) as db:
         plantadas = {a["equipamento_id"] for a in db.execute(text(
             "SELECT valor FROM estado_preditivo WHERE chave = 'anomalias_plantadas'")).scalar()}
-        anomalias.verificar(db)
+        # Na data de referência do gerador: com o passar dos dias, a anomalia plantada mais antiga passa a ocupar mais
+        # da metade da janela de referência e vira o "novo normal" (é assim que o detector funciona, por medianas)
+        ref = db.execute(text("SELECT valor->>'data_referencia' FROM estado_preditivo WHERE chave = 'cidade'")).scalar()
+        anomalias.verificar(db, pd.Timestamp(ref).tz_localize("America/Sao_Paulo").to_pydatetime())
         achadas = {i for (i,) in db.execute(text(
             "SELECT equipamento_id FROM alerta WHERE tipo = 'anomalia_equipamento' AND resolvido_em IS NULL"))}
     assert plantadas <= achadas

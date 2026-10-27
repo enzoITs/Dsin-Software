@@ -38,7 +38,7 @@ def banco():
 
 
 TABELAS = (
-    "cenario, serie_equipamento_hora, estado_preditivo, backtest_resultado, recomendacao, previsao, modelo_versao, escala_agente, clima_hora, "
+    "briefing, cenario, serie_equipamento_hora, estado_preditivo, backtest_resultado, recomendacao, previsao, modelo_versao, escala_agente, clima_hora, "
     "evento_cidade, calendario, ocorrencia, "
     "instantaneo, config_motor, regiao, anexo, alerta, agente, ordem_servico, registro_manutencao, plano_manutencao, historico_situacao, "
     "localizacao, equipamento, base, bairro, cidade, tipo_equipamento, orgao"

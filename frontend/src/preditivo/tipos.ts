@@ -174,3 +174,13 @@ export interface PadroesDescobertos {
   gerado_em: string; padroes: PadraoDescoberto[]; resumo: Record<string, number>; aviso: string;
   curvas: Record<string, Record<string, number>[]>;
 }
+
+/** Copiloto (C3) e briefing (C4) */
+export interface RespostaCopiloto {
+  modo: "ia" | "sem_ia"; resposta: string; motivo?: string; pronta?: string;
+  ferramentas: { nome: string; entrada: Record<string, unknown> }[]; previsoes: number[]; dados_sinteticos: boolean;
+}
+export interface Briefing {
+  id: number; data: string; titulo: string; gerado_em: string; gerado_por: string; rodape: string; markdown: string;
+  secoes: { id: string; titulo: string; itens: { texto: string; previsao_id: number | null }[] }[];
+}

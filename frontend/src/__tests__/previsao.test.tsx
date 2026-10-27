@@ -123,3 +123,15 @@ describe("Cenário e se", () => {
     expect(screen.getByText(/Nada foi alterado no sistema/)).toBeTruthy();
   });
 });
+
+describe("Copiloto", () => {
+  it("renderiza listas, negrito e o link do cartão", async () => {
+    const { default: TextoRico } = await import("../preditivo/TextoRico");
+    const abertos: number[] = [];
+    render(<TextoRico texto={"**Centro, sexta à noite** [prev_42]\n\n- Oeste: alto\n- Sul: moderado"} abrir={(id) => abertos.push(id)} />);
+    expect(screen.getByText("Centro, sexta à noite").tagName).toBe("B");
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    screen.getByRole("button", { name: "cartão" }).click();
+    expect(abertos).toEqual([42]);
+  });
+});

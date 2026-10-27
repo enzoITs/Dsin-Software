@@ -56,11 +56,13 @@ Não há login. O seletor no topo escolhe o perfil, enviado à API em cabeçalho
 
 | Endereço | O que é |
 |---|---|
+| http://localhost:5173/previsao/briefing | **Briefing diário** (6 h): risco do dia, reforços, manutenções, anomalias, contexto e o acertômetro de ontem; baixa em Markdown |
 | http://localhost:5173/amanha | **Amanhã**: mapa de risco das próximas 72 h, recomendações e contexto (feriados, eventos, clima editável) |
 | http://localhost:5173/previsao/equipamentos | Equipamentos em risco de falha (7 e 30 dias), com OS preventiva em lote |
 | http://localhost:5173/previsao/equipes | Planejamento de equipes: escala atual × recomendada |
 | http://localhost:5173/previsao/cenarios | **Cenários "e se"**: evento novo ou cancelado, chuva, equipes a mais ou a menos, equipamentos fora, preventivas; compara com hoje e salva com nome |
 | http://localhost:5173/previsao/decisoes | **Decisões e retorno**: quem decidiu o quê e por quê, e o que aconteceu depois (aceitas × rejeitadas) |
+| http://localhost:5173/previsao/copiloto | **Copiloto**: perguntas em português respondidas com os dados do sistema; com `ANTHROPIC_API_KEY`, o Claude consulta as previsões por ferramentas; sem chave, perguntas prontas |
 | http://localhost:5173/previsao/confianca | **Confiança dos modelos**: backtest contra a média histórica, calibração, o que pesa, padrões descobertos × plantados, acertômetro (previsto × real) e retreino |
 
 Na central, os **alertas preventivos** (risco alto na região nas próximas 6 h, equipamento com alta chance de falhar e sem OS, falta de agentes prevista) aparecem com visual próprio ("Previsão · previsto para… · em 3 h") e o botão "Ver previsão" abre o cartão. A camada "Risco previsto (próximas 6 h)" pinta as regiões pelo índice previsto. Esses alertas não pesam na saúde atual da região e se resolvem sozinhos quando o período passa, a OS é aberta ou o reforço é aceito.
@@ -266,6 +268,6 @@ Estrutura:
 - `backend/app/preditivo`: Parte 3 (calendário, clima, padrões plantados, geradores, modo contínuo).
 - `frontend/src/pages/Central.tsx` e `frontend/src/central/`: a tela da central (mapa, painéis, WebSocket).
 
-Testes: 208 no backend (73 da Parte 1, 39 da Parte 2, 96 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1, P2 e P3 superando os baselines, índice de risco, otimização de equipes respeitando as restrições, anomalias plantadas encontradas e série normal sem alarme, contrato de previsão e decisões, alertas preventivos que disparam e se resolvem, acertômetro, cenários (menos equipes aumenta o risco não coberto, evento aumenta ocorrências perto), retorno das decisões, padrões descobertos) e 20 no frontend.
+Testes: 211 no backend (73 da Parte 1, 39 da Parte 2, 99 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1, P2 e P3 superando os baselines, índice de risco, otimização de equipes respeitando as restrições, anomalias plantadas encontradas e série normal sem alarme, contrato de previsão e decisões, alertas preventivos que disparam e se resolvem, acertômetro, cenários (menos equipes aumenta o risco não coberto, evento aumenta ocorrências perto), retorno das decisões, padrões descobertos, copiloto com e sem IA, briefing) e 21 no frontend.
 
 Como a IA foi usada no desenvolvimento e nos recursos do sistema: [docs/uso-de-ia.md](docs/uso-de-ia.md).
