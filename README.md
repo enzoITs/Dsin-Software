@@ -71,14 +71,14 @@ O que cada modelo prevê, com que dados, como ajuda e quanto acerta: **[docs/par
 
 | Módulo | O que prevê | Resultado contra a referência (backtest) |
 |---|---|---|
-| P1 | Chance de cada equipamento falhar em 7 e 30 dias | Dos 50 mais apontados na semana, 15% falham (média do tipo: 4%) |
-| P2 | Ocorrências por região e hora, 72 h | Erro médio 1,24 × 1,33 (média da mesma hora em 8 semanas) |
+| P1 | Chance de cada equipamento falhar em 7 e 30 dias | Dos 50 mais apontados na semana, 17% falham (média do tipo: 4%) |
+| P2 | Ocorrências por região e hora, 72 h | Erro médio 1,25 × 1,34 (média da mesma hora em 8 semanas) |
 | P3 | Índice de risco 0–100 por região e período | Composto de P1, P2, cobertura, escala e contexto |
-| P4 | Reforço de equipes (otimização) | Risco não coberto 63% menor nas 72 h |
+| P4 | Reforço de equipes (otimização) | Risco não coberto 48% menor nas 72 h |
 | P5 | Anomalias em equipamentos e regiões | 6 de 6 anomalias plantadas, nenhum alarme falso |
-| P6 | Disponibilidade em 30 e 90 dias | Erro 32% menor em 90 dias |
-| P7 | Risco de furto em 30 dias | AUC 0,73 × 0,59 |
-| P8 | Carga de manutenção, 4 semanas | Erro 31% menor |
+| P6 | Disponibilidade em 30 e 90 dias | Erro 34% menor em 90 dias |
+| P7 | Risco de furto em 30 dias | AUC 0,63 × 0,53 |
+| P8 | Carga de manutenção, 4 semanas | Erro 28% menor |
 
 ### As telas
 
@@ -108,7 +108,7 @@ Na central, os **alertas preventivos** (risco alto na região nas próximas 6 h,
 
 ### Dados sintéticos e padrões plantados
 
-**Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 160 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, descritos em [docs/parte3/padroes-plantados.md](docs/parte3/padroes-plantados.md). Os modelos não leem essa descrição: precisam redescobrir os padrões. Resultado: 9 encontrados e 1 com sinal fraco, em [docs/parte3/relatorio-descoberta.md](docs/parte3/relatorio-descoberta.md).
+**Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 174 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, descritos em [docs/parte3/padroes-plantados.md](docs/parte3/padroes-plantados.md). Os modelos não leem essa descrição: precisam redescobrir os padrões. Resultado: 9 encontrados e 1 não encontrado (calor nos radares de rodovia: o modelo vê o efeito diluído), em [docs/parte3/relatorio-descoberta.md](docs/parte3/relatorio-descoberta.md).
 
 ```bash
 podman compose exec api python -m scripts.verificar_padroes        # confere cada padrão com consultas diretas

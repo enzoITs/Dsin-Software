@@ -81,7 +81,7 @@ Cerca de 10 minutos. O mesmo roteiro está dentro do sistema: botão **Apresenta
 - Cada modelo ao lado da média histórica (backtest de 91 dias), calibração de P1, o que mais pesa.
 - Acertômetro: previsto × real das últimas horas.
 - Monitor dos modelos em operação.
-- **Padrões plantados × descobertos**: 9 encontrados, 1 com sinal fraco (calor nos radares de rodovia), dito abertamente.
+- **Padrões plantados × descobertos**: 9 de 10 encontrados; o que falta (calor nos radares de rodovia) aparece como não encontrado, dito abertamente.
 - Dizer: *"Os modelos não leram os padrões que plantamos nos dados e acharam quase todos. A confiança baixa é dita abertamente."*
 
 ### 9. Copiloto — `/previsao/copiloto`

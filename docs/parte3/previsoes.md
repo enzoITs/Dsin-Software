@@ -2,7 +2,7 @@
 
 O enunciado pede para "deixar claro o que está sendo previsto, quais informações foram consideradas e como essa previsão pode ajudar na tomada de decisão". Este documento responde a essas três perguntas para cada módulo, e mostra quanto cada um acerta contra uma referência simples.
 
-> **Os dados são sintéticos.** Os números abaixo vêm do backtest no banco gerado (`scripts/gerar_historico.py`, semente fixa, 18 meses). Numa cidade real, os padrões e as métricas seriam outros. Detalhes de cada escolha estão em [decisoes.md](decisoes.md).
+> **Os dados são sintéticos.** Os números abaixo vêm do backtest no banco de demonstração criado em 27/10/2026 (`scripts/gerar_historico.py`, semente fixa, 18 meses); a tela Confiança dos modelos mostra os do banco em uso, que mudam um pouco com a data de criação. Numa cidade real, os padrões e as métricas seriam outros. Detalhes de cada escolha estão em [decisoes.md](decisoes.md).
 
 ## Regras que valem para todas
 
@@ -39,14 +39,14 @@ O cartão tem três títulos fixos: **"O que estamos prevendo"**, **"Com base em
 
 | Módulo | O que prevê | Para quem | Modelo | Referência | Resultado |
 |---|---|---|---|---|---|
-| P1 | Chance de cada equipamento falhar em 7 e 30 dias | Manutenção | LightGBM calibrado | Taxa de falha do tipo | Dos 50 mais apontados, 15% falham na semana (referência: 4%) |
-| P2 | Ocorrências por região e hora, 72 h | Operação | LightGBM Poisson por bairro | Média da mesma hora e dia nas últimas 8 semanas | Erro médio 1,24 × 1,33 por região e hora |
+| P1 | Chance de cada equipamento falhar em 7 e 30 dias | Manutenção | LightGBM calibrado | Taxa de falha do tipo | Dos 50 mais apontados, 17% falham na semana (referência: 4%) |
+| P2 | Ocorrências por região e hora, 72 h | Operação | LightGBM Poisson por bairro | Média da mesma hora e dia nas últimas 8 semanas | Erro médio 1,25 × 1,34 por região e hora |
 | P3 | Índice de risco 0–100 por região e período | Gestor | Fórmula sobre P1, P2, escala e contexto | Herda de P2 | Faixas Baixo, Moderado, Alto, Muito alto |
-| P4 | Reforço de equipes por região e período | Gestor | Programação linear inteira | Escala atual | Risco não coberto 63% menor nas 72 h |
+| P4 | Reforço de equipes por região e período | Gestor | Programação linear inteira | Escala atual | Risco não coberto 48% menor nas 72 h |
 | P5 | Equipamentos e regiões fora do padrão | Central | STL + escore robusto, Isolation Forest | — | 6 de 6 anomalias plantadas achadas, nenhum alarme falso em 240 séries |
-| P6 | Disponibilidade por região e tipo em 30 e 90 dias | Gestor | ETS amortecido nas médias semanais | Última média móvel de 30 dias | Erro 0,47 × 0,69 ponto em 90 dias |
-| P7 | Chance de furto de cada equipamento em 30 dias | Operação | LightGBM com restrição monótona | Taxa de furto do tipo | AUC 0,73 × 0,59 |
-| P8 | Carga de manutenção por semana, tipo e região (4 semanas) | Manutenção | Soma de P1 e do plano de preventivas | Taxa de falha do tipo | Erro 4,35 × 6,30 falhas por semana |
+| P6 | Disponibilidade por região e tipo em 30 e 90 dias | Gestor | ETS amortecido nas médias semanais | Última média móvel de 30 dias | Erro 0,45 × 0,68 ponto em 90 dias |
+| P7 | Chance de furto de cada equipamento em 30 dias | Operação | LightGBM com restrição monótona | Taxa de furto do tipo | AUC 0,63 × 0,53 |
+| P8 | Carga de manutenção por semana, tipo e região (4 semanas) | Manutenção | Soma de P1 e do plano de preventivas | Taxa de falha do tipo | Erro 4,27 × 5,96 falhas em 30 dias |
 
 ---
 
@@ -62,12 +62,12 @@ O cartão tem três títulos fixos: **"O que estamos prevendo"**, **"Com base em
 
 | Horizonte | Métrica | Modelo | Regressão logística | Taxa do tipo |
 |---|---|---|---|---|
-| 7 dias | AUC | **0,643** | 0,638 | 0,597 |
-| 7 dias | Brier | **0,0262** | — | 0,0264 |
-| 7 dias | Falham entre os 50 primeiros | **15,1%** | — | 3,8% |
-| 30 dias | AUC | **0,646** | 0,645 | 0,597 |
-| 30 dias | Brier | **0,0928** | — | 0,0961 |
-| 30 dias | Falham entre os 50 primeiros | **52,9%** | — | 15,8% |
+| 7 dias | AUC | **0,643** | 0,642 | 0,602 |
+| 7 dias | Brier | **0,0255** | — | 0,0257 |
+| 7 dias | Falham entre os 50 primeiros | **16,9%** | — | 4,2% |
+| 30 dias | AUC | **0,638** | 0,638 | 0,596 |
+| 30 dias | Brier | **0,0913** | — | 0,0941 |
+| 30 dias | Falham entre os 50 primeiros | **51,8%** | — | 16,2% |
 
 A AUC é modesta de propósito: cada equipamento tem uma fragilidade própria e a falha de um dia é sorteio. O que serve à decisão é o ranking: de cada 50 equipamentos apontados para a semana, cerca de 8 falham, contra 2 pela média do tipo. Confiança dita no cartão: moderada.
 
@@ -85,12 +85,12 @@ Telas: `/previsao/equipamentos`, ficha do equipamento, Central. API: `GET /equip
 
 | Métrica | Modelo | Média da mesma hora e dia (8 semanas) |
 |---|---|---|
-| Erro médio (MAE) | **1,244** | 1,333 |
-| Erro percentual | **46,1%** | 49,4% |
-| MAE nas horas de pico | **1,905** | 2,000 |
+| Erro médio (MAE) | **1,252** | 1,337 |
+| Erro percentual | **46,4%** | 49,6% |
+| MAE nas horas de pico | **1,909** | 2,016 |
 | Cobertura da faixa de 90% | 90% | — |
 
-O erro quase não cresce com o horizonte (1,24 nas primeiras 24 h, 1,25 entre 48 e 72 h). Com média de 2,5 ocorrências por região e hora, boa parte do erro é o sorteio natural das contagens. Atenção ao fator "agentes na escala": mais agentes registram mais ocorrências (viés de registro). Por isso os cenários nunca usam P2 para dizer que tirar equipes "reduz ocorrências".
+O erro quase não cresce com o horizonte (1,25 nas primeiras 24 h e entre 48 e 72 h). Com média de 2,7 ocorrências por região e hora, boa parte do erro é o sorteio natural das contagens. Atenção ao fator "agentes na escala": mais agentes registram mais ocorrências (viés de registro). Por isso os cenários nunca usam P2 para dizer que tirar equipes "reduz ocorrências".
 
 API: `GET /previsoes?modulo=P2`, `GET /amanha/regioes/{id}`.
 
@@ -114,7 +114,7 @@ Telas: `/amanha`, Central. API: `GET /amanha`, `GET /risco-previsto`.
 
 **Como isso ajuda:** recomendação em texto direto, por exemplo "Domingo (25/10), 18 h às 24 h: reforçar a região Centro com +1 equipe de trânsito (CET), vinda da região Norte (risco previsto baixo nesse horário). Motivo: Palmeiras x São Paulo com 38 mil pessoas; ocorrências esperadas 1,4× o normal do horário." Aceitar move o turno só naquele período.
 
-**Resultado:** nas 72 h do banco de demonstração, risco não coberto de 1.731 com a escala atual para 637 com a recomendada (63% menor), com 17 reforços. Período sem reforço possível nas próximas 6 h vira alerta `PREVISAO_FALTA_AGENTES`.
+**Resultado:** nas 72 h a partir da criação do banco de demonstração, risco não coberto de 2.891 com a escala atual para 1.510 com a recomendada (48% menor), com 12 reforços. O número muda a cada hora, com a escala e as ocorrências previstas. Período sem reforço possível nas próximas 6 h vira alerta `PREVISAO_FALTA_AGENTES`.
 
 Tela: `/previsao/equipes`. API: `GET /planejamento/equipes`, `POST /planejamento/equipes/recalcular`.
 
@@ -138,7 +138,7 @@ API: `GET /anomalias`.
 
 **Como isso ajuda:** semanas antes, mostra a região que vai cruzar a meta de 90% (alerta `PREVISAO_DISPONIBILIDADE`) e quanto as preventivas evitam. Ação: priorizar manutenção (abre OS para até 20 equipamentos de risco alto da região).
 
-**Quanto acerta:** erro de 0,45 × 0,47 ponto em 30 dias (ganho de 3%, confiança baixa, dito no cartão) e 0,47 × 0,69 em 90 dias (32% menor). Na região Leste, que cai de verdade, 0,99 × 2,14 em 90 dias.
+**Quanto acerta:** erro de 0,38 × 0,46 ponto em 30 dias (17% menor) e 0,45 × 0,68 em 90 dias (34% menor). Na região Leste, que cai de verdade, 1,07 × 2,34 em 90 dias.
 
 Tela: `/previsao/tendencias`. API: `GET /tendencias/disponibilidade`.
 
@@ -150,7 +150,7 @@ Tela: `/previsao/tendencias`. API: `GET /tendencias/disponibilidade`.
 
 **Como isso ajuda:** ação "incluir na ronda noturna" e, quando não há câmera a menos de 300 m, indicação na tela de Expansão.
 
-**Quanto acerta:** AUC 0,733 contra 0,59 da taxa de furto do tipo.
+**Quanto acerta:** AUC 0,634 contra 0,528 da taxa de furto do tipo. Furto é raro (taxa de 0,15% em 30 dias): entre os 50 apontados, 2,9% são furtados, contra 0,4% pela taxa do tipo. A confiança é dita no cartão; o banco de desenvolvimento chegou a AUC 0,73, e a diferença mostra quanto o resultado depende de poucos casos.
 
 Tela: `/previsao/furtos`. API: `GET /furtos/risco`.
 
@@ -162,7 +162,7 @@ Tela: `/previsao/furtos`. API: `GET /furtos/risco`.
 
 **Como isso ajuda:** planejar técnicos e peças antes do pico.
 
-**Quanto acerta:** erro de 4,35 falhas por semana, tipo e região contra 6,30 da taxa do tipo (31% melhor).
+**Quanto acerta:** no backtest de P1 em 30 dias somado por tipo e região, erro de 4,27 falhas contra 5,96 da taxa do tipo (28% melhor).
 
 API: `GET /tendencias/manutencao`.
 
