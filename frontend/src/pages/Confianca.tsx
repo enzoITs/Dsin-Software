@@ -7,7 +7,8 @@ import { ApiError } from "../api/client";
 import { Botao, Carregando, Erro, Secao } from "../components/ui";
 import { usePerfil } from "../lib/perfil";
 import AvisoTreino from "../preditivo/AvisoTreino";
-import { useAcertometro, useModelos, usePadroes, useTreinar } from "../preditivo/api";
+import { useAcertometro, useModelos, useMonitor, usePadroes, useTreinar } from "../preditivo/api";
+import type { SituacaoModelo } from "../preditivo/tipos";
 import { num, pct } from "../preditivo/formato";
 import type { Acertometro, MetricasConferidas, ModeloAvaliado, PadroesDescobertos } from "../preditivo/tipos";
 
@@ -338,6 +339,40 @@ function Padroes({ d }: { d: PadroesDescobertos }) {
   );
 }
 
+const COR_SIT: Record<SituacaoModelo, string> = { ok: "#1f9d55", sem_dados: "#6b6b6b", atencao: "#d99a00", retreinar: "#d62828" };
+const ROT_SIT: Record<SituacaoModelo, string> = { ok: "OK", sem_dados: "Sem dados ainda", atencao: "Atenção", retreinar: "Retreinar" };
+
+function MonitorModelos() {
+  const m = useMonitor();
+  if (m.isLoading) return <Carregando texto="Conferindo os modelos…" />;
+  if (!m.data) return <Erro erro={m.error} />;
+  return (
+    <Secao titulo="Monitor dos modelos em operação">
+      <p className="mb-2 text-[13px]">
+        <b style={{ color: COR_SIT[m.data.situacao] }}>{m.data.texto}.</b> <span className="text-cinza">{m.data.como_funciona}</span>
+      </p>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {m.data.modelos.map((x) => (
+          <div key={x.nome} className="border border-linha p-2 text-[12px]" style={{ borderLeft: `4px solid ${COR_SIT[x.situacao]}` }}>
+            <div className="flex items-center justify-between gap-2">
+              <b className="text-[13px]">{x.titulo}</b>
+              <span className="font-semibold" style={{ color: COR_SIT[x.situacao] }}>{ROT_SIT[x.situacao]}</span>
+            </div>
+            <ul className="mt-1 space-y-1">
+              {x.verificacoes.map((c) => (
+                <li key={c.verificacao} className="flex gap-1">
+                  <span className="mt-[5px] inline-block h-[7px] w-[7px] shrink-0" style={{ background: COR_SIT[c.situacao] }} />
+                  <span>{c.texto}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Secao>
+  );
+}
+
 export default function ConfiancaModelos() {
   const modelos = useModelos();
   const [dias, setDias] = useState(7);
@@ -368,6 +403,7 @@ export default function ConfiancaModelos() {
         Os números mostram que o método funciona; numa cidade real, os modelos seriam treinados e avaliados com os dados dela.
       </p>
 
+      <MonitorModelos />
       {modelos.isLoading ? <Carregando /> : modelos.error ? <Erro erro={modelos.error} /> : (
         <>
           {modelos.data!.modelos.map((m) => <CartaoModelo key={m.nome} m={m} />)}

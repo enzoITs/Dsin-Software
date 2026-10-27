@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "../api/client";
 import type {
   Acertometro, Amanha, CenarioParams, CenarioSalvo, Cartao, DetalheRegiao, EstadoTreino, Modelos, OpcoesCenario, PadroesDescobertos, Plano,
-  Briefing, Ranking, Recomendacao, RespostaCopiloto, ResultadoCenario, Retorno, Disponibilidade, Manutencao, RiscoFurto, Expansao,
+  Briefing, Ranking, Recomendacao, RespostaCopiloto, ResultadoCenario, Retorno, Disponibilidade, Manutencao, RiscoFurto, Expansao, FimDeVida, Monitor,
 } from "./tipos";
 
 export const useAmanha = () =>
@@ -172,3 +172,13 @@ export const useRiscoFurto = (params: Record<string, string | number | string[] 
 export const useExpansao = (criterio: string, n: number) =>
   useQuery({ queryKey: ["prev", "expansao", criterio, n], queryFn: () => api<Expansao>("/expansao/sugestoes", { params: { criterio, n } }),
              placeholderData: keepPreviousData, retry: false, staleTime: 5 * 60_000 });
+
+// Fase 13
+export const useFimDeVida = (params: Record<string, string | number | undefined>) =>
+  useQuery({ queryKey: ["prev", "fim-de-vida", params], queryFn: () => api<FimDeVida>("/equipamentos/fim-de-vida", { params }),
+             placeholderData: keepPreviousData, retry: false, staleTime: 5 * 60_000 });
+
+export const useMonitor = () => useQuery({ queryKey: ["prev", "monitor"], queryFn: () => api<Monitor>("/modelos/monitor"), retry: false });
+
+export const useRelatorioSemanal = (ativo: boolean) =>
+  useQuery({ queryKey: ["prev", "relatorio-semanal"], enabled: ativo, queryFn: () => api<Briefing>("/relatorio/semanal"), retry: false });

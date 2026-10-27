@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
+import ModoApresentacao from "./components/ModoApresentacao";
 import Agentes from "./pages/Agentes";
 import Alertas from "./pages/Alertas";
 import Campo from "./pages/Campo";
@@ -25,10 +26,13 @@ const BriefingDia = lazy(() => import("./pages/BriefingDia"));
 const Tendencias = lazy(() => import("./pages/Tendencias"));
 const RiscoFurto = lazy(() => import("./pages/RiscoFurto"));
 const Expansao = lazy(() => import("./pages/Expansao"));
+const FimDeVida = lazy(() => import("./pages/FimDeVida"));
+const Etica = lazy(() => import("./pages/Etica"));
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ModoApresentacao />
       <Routes>
         <Route path="/campo/*" element={<Campo />} />
         <Route path="/central" element={<Suspense fallback={<Carregando texto="Abrindo a central…" />}><Central /></Suspense>} />
@@ -44,6 +48,8 @@ export default function App() {
           <Route path="previsao/tendencias" element={<Suspense fallback={<Carregando />}><Tendencias /></Suspense>} />
           <Route path="previsao/furtos" element={<Suspense fallback={<Carregando />}><RiscoFurto /></Suspense>} />
           <Route path="previsao/expansao" element={<Suspense fallback={<Carregando />}><Expansao /></Suspense>} />
+          <Route path="previsao/fim-de-vida" element={<Suspense fallback={<Carregando />}><FimDeVida /></Suspense>} />
+          <Route path="previsao/etica" element={<Suspense fallback={<Carregando />}><Etica /></Suspense>} />
           <Route index element={<Inventario />} />
           <Route path="equipamentos/novo" element={<CadastroEquipamento />} />
           <Route path="equipamentos/:id" element={<FichaEquipamento />} />

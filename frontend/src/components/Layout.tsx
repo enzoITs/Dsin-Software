@@ -2,6 +2,8 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useOrgaos, useResumo } from "../api/hooks";
 import { usePerfil } from "../lib/perfil";
 import type { Perfil } from "../api/client";
+import { Presentation } from "lucide-react";
+import { iniciarApresentacao } from "./ModoApresentacao";
 
 const LINKS = [
   { to: "/central", rotulo: "Central de operações" },
@@ -12,10 +14,12 @@ const LINKS = [
   { to: "/previsao/tendencias", rotulo: "Tendências" },
   { to: "/previsao/furtos", rotulo: "Risco de furto" },
   { to: "/previsao/expansao", rotulo: "Expansão" },
+  { to: "/previsao/fim-de-vida", rotulo: "Fim de vida" },
   { to: "/previsao/cenarios", rotulo: "Cenários" },
   { to: "/previsao/decisoes", rotulo: "Decisões" },
   { to: "/previsao/confianca", rotulo: "Confiança" },
   { to: "/previsao/copiloto", rotulo: "Copiloto" },
+  { to: "/previsao/etica", rotulo: "Ética e limites" },
   { to: "/", rotulo: "Inventário", fim: true },
   { to: "/equipamentos/novo", rotulo: "Cadastrar" },
   { to: "/agentes", rotulo: "Agentes" },
@@ -60,7 +64,12 @@ export default function Layout() {
             <span className="h-[10px] w-[10px] bg-acento" aria-hidden />
             <span className="text-[12px] text-cinza">Inventário, central e cidade preditiva</span>
           </div>
-          <div className="pb-3"><SeletorPerfil /></div>
+          <div className="flex items-center gap-3 pb-3">
+            <button onClick={iniciarApresentacao} className="inline-flex items-center gap-1 border border-tinta px-2 py-1 text-[13px] font-semibold hover:bg-neutro">
+              <Presentation size={14} /> Apresentar
+            </button>
+            <SeletorPerfil />
+          </div>
         </div>
         <nav className="mx-auto flex max-w-[1400px] flex-wrap gap-0 px-4 md:px-8">
           {LINKS.map((l) => (

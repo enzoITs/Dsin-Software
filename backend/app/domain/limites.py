@@ -71,6 +71,12 @@ PADRAO: dict[str, Any] = {
     "prev_c2_celula_m": 400,            # expansão: tamanho da célula da grade
     "prev_c2_sugestoes": 10,            # quantas sugestões de câmera nova
     "prev_c2_distancia_min_m": 800,     # distância mínima entre duas sugestões
+    # Parte 3, fase 13: extras
+    "prev_x3_vida_util_anos": {"padrao": 8, "CAM": 6, "RAD": 8, "TOT": 7, "BAL": 10, "CAN": 8, "VIA": 7, "VAF": 8},
+    "prev_x3_ganho_min": 0.15,          # fim de vida: a troca reduz o risco de falhar em 30 dias em pelo menos isto...
+    "prev_x3_dias_parado_min": 30,      # ...e o equipamento ficou pelo menos N dias parado no último ano
+    "prev_x4_queda_ganho_pp": 15,       # monitor: ganho sobre o baseline na operação caiu N pontos em relação ao backtest
+    "prev_x4_idade_max_dias": 30,       # monitor: modelo treinado há mais de N dias pede retreino
 }
 
 _cache: dict[str, Any] = {"em": 0.0, "valores": None}

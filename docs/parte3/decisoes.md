@@ -255,3 +255,14 @@ Testes novos: contrato completo na API, decisões (aceitar abre a OS; rejeitar e
 | Agendador | P6, P7, P8 às 5 h | Junto com P1 (5h10) | — |
 | Descoberta (Q2) | — | Padrão 6 agora pelo P7 (bairros de maior risco previsto e contrafactual da câmera); padrão 11 pela tendência do P6 | Antes eram consultas diretas |
 | Telas | Tendências, Expansão | `/previsao/tendencias` (disponibilidade com gráfico observado, previsto, faixa, meta e "seguindo P1"; carga de manutenção por semana e região), `/previsao/furtos` (ranking, bairros, cartão), `/previsao/expansao` (mapa e motivos). Ficha do equipamento mostra também o cartão de furto | — |
+
+## Fase 13 (extras)
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| X1 rotativo, X2 patinetes | extras | **Não feitos** | Os padrões 9 e 10 não foram plantados (decisão da fase 0); sem eles, os modelos não teriam o que mostrar |
+| X3 fim de vida útil | — | `GET /equipamentos/fim-de-vida` e tela `/previsao/fim-de-vida`. Junta idade × vida útil do tipo (configuração `prev_x3_vida_util_anos`), falhas e dias parado no último ano, e o P1 de 30 dias como está e "como se fosse novo" (contrafactual: idade de um mês, sem falhas, preventiva em dia). Recomenda trocar se passou da vida útil, ou se a troca reduz o risco em 15 pontos e ele ficou 30 dias parado no ano | Separa desgaste de azar. No banco de desenvolvimento, as câmeras Hikvision antigas dominam a lista (padrão 4), sem que a regra conheça a marca |
+| X4 monitor de modelos | — | `GET /modelos/monitor`, seção na tela de confiança e no relatório semanal. Por modelo: idade do treino (retreinar depois de 30 dias), desempenho das previsões conferidas contra o baseline comparado com o backtest, e deriva dos dados (ocorrências por hora, falhas por mil equipamentos, furtos por mês) contra o período de treino. Com menos de 3 dias de horas conferidas, P2 vai no máximo para "atenção" | Não retreina sozinho: o gestor decide. Amostra pequena não deve disparar retreino |
+| X5 relatório semanal | — | `GET /relatorio/semanal` (e `.md`), aba na tela do briefing. Mesmo formato do briefing: acertômetro da semana, decisões e retorno, alertas preventivos e anomalias, tendências (P6, P8, P7, fim de vida) e saúde dos modelos | Gerado sob demanda, sem IA, sem tabela nova |
+| X6 modo apresentação | — | Botão "Apresentar" (ou `?apresentar` na URL): painel com o roteiro da demonstração, o que mostrar e o que dizer em cada passo; navega sozinho para a tela do passo. PageDown e PageUp avançam e voltam (as teclas que os passadores de slide enviam); Esc recolhe | Setas conflitariam com o controle de horário da tela "Amanhã" |
+| X7 ética e limites | página | Tela `/previsao/etica` e `docs/parte3/etica-e-limites.md` | — |

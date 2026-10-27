@@ -22,7 +22,8 @@ from app.models.enums import EstadoRecomendacao as ER
 DECIDIDAS = (ER.aceita, ER.ajustada, ER.rejeitada)
 TIPOS_OS = ("ABRIR_ORDEM_SERVICO", "INCLUIR_ROTA_MANUTENCAO")
 ROTULO_TIPO = {"ABRIR_ORDEM_SERVICO": "OS preventiva", "INCLUIR_ROTA_MANUTENCAO": "Rota de manutenção",
-               "REFORCAR_EQUIPES": "Reforço de equipes"}
+               "REFORCAR_EQUIPES": "Reforço de equipes", "PRIORIZAR_MANUTENCAO": "Priorizar manutenção da região",
+               "INCLUIR_RONDA_NOTURNA": "Ronda de madrugada", "PLANEJAR_MANUTENCAO": "Planejar equipe de manutenção"}
 
 
 def _fmt(v: float, casas: int = 1) -> str:

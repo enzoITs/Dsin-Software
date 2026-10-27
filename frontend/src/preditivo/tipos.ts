@@ -229,3 +229,23 @@ export interface Expansao {
     cobertura_com_sugestoes_pct: number | null; novas_cobertas_mes: number; furtos_evitados_ano: number;
   };
 }
+
+// ---------------------------------------------------------------- fase 13: extras
+
+export interface ItemFimDeVida {
+  equipamento_id: number; codigo: string; tipo: string; marca: string; modelo: string; regiao: string | null; idade_anos: number;
+  vida_util_anos: number; uso_vida_pct: number; falhas_ano: number; dias_parado_ano: number; p30: number; p30_novo: number;
+  reducao_pp: number; motivo_principal: string; motivos: string[];
+}
+export interface FimDeVida {
+  o_que_preve: string; como_ajuda: string; dados_considerados: string[]; criterio: string; mensagem?: string; itens: ItemFimDeVida[];
+  resumo: null | { avaliados: number; recomendados: number; passou_vida_util: number; desgaste: number; dias_parado_total: number;
+    falhas_evitaveis_mes: number; por_tipo: { tipo: string; n: number; dias_parado: number }[]; marcas: { tipo: string; marca: string; n: number }[] };
+}
+
+export type SituacaoModelo = "ok" | "atencao" | "retreinar" | "sem_dados";
+export interface Monitor {
+  gerado_em: string; situacao: SituacaoModelo; texto: string; como_funciona: string;
+  modelos: { nome: string; titulo: string; versao: string; situacao: SituacaoModelo;
+    verificacoes: { verificacao: string; situacao: SituacaoModelo; texto: string }[] }[];
+}

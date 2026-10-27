@@ -4,36 +4,46 @@ import { Botao, Carregando, Erro } from "../components/ui";
 import { usePerfil } from "../lib/perfil";
 import AvisoTreino from "../preditivo/AvisoTreino";
 import GavetaCartao from "../preditivo/GavetaCartao";
-import { useBriefing, useGerarBriefing } from "../preditivo/api";
+import { useBriefing, useGerarBriefing, useRelatorioSemanal } from "../preditivo/api";
 
-/** Briefing diário (C4): gerado às 6 h com o que o gestor precisa saber no dia. */
+/** Briefing diário (C4), gerado às 6 h, e relatório semanal (X5), no mesmo formato. */
 export default function BriefingDia() {
-  const b = useBriefing();
+  const [aba, setAba] = useState<"dia" | "semana">("dia");
+  const diario = useBriefing();
+  const semanal = useRelatorioSemanal(aba === "semana");
+  const b = aba === "dia" ? diario : semanal;
   const gerar = useGerarBriefing();
   const { perfil } = usePerfil();
   const [cartao, setCartao] = useState<number | null>(null);
   const baixar = () => {
     if (!b.data) return;
     const url = URL.createObjectURL(new Blob([b.data.markdown], { type: "text/markdown;charset=utf-8" }));
-    const a = Object.assign(document.createElement("a"), { href: url, download: `briefing-${b.data.data}.md` });
+    const a = Object.assign(document.createElement("a"), { href: url, download: `${aba === "dia" ? "briefing" : "relatorio-semanal"}-${b.data.data}.md` });
     a.click();
     URL.revokeObjectURL(url);
   };
-  if (b.isLoading) return <Carregando texto="Montando o briefing…" />;
-  if (!b.data) return <Erro erro={b.error} />;
+  const abas = (
+    <div className="flex gap-4 border-b border-linha text-[14px] font-semibold">
+      <button onClick={() => setAba("dia")} className={`pb-2 ${aba === "dia" ? "border-b-2 border-tinta" : "text-cinza"}`}>Briefing do dia</button>
+      <button onClick={() => setAba("semana")} className={`pb-2 ${aba === "semana" ? "border-b-2 border-tinta" : "text-cinza"}`}>Relatório semanal</button>
+    </div>
+  );
+  if (b.isLoading) return <div className="mx-auto max-w-[860px]">{abas}<Carregando texto={aba === "dia" ? "Montando o briefing…" : "Montando o relatório da semana…"} /></div>;
+  if (!b.data) return <div className="mx-auto max-w-[860px]">{abas}<Erro erro={b.error} /></div>;
   const d = b.data;
   return (
     <div className="mx-auto max-w-[860px] space-y-4">
+      {abas}
       <AvisoTreino />
       <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-tinta pb-3">
         <div>
-          <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-cinza">Briefing diário · 6 h</div>
+          <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-cinza">{aba === "dia" ? "Briefing diário · 6 h" : "Relatório semanal"}</div>
           <h1 className="text-[26px] font-bold tracking-[-0.02em]">{d.titulo}</h1>
           <p className="text-[12px] text-cinza">Gerado em {new Date(d.gerado_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} ({d.gerado_por})</p>
         </div>
         <div className="flex gap-2">
           <Botao onClick={baixar}><Download size={14} /> Markdown</Botao>
-          {perfil.perfil === "gestor" && <Botao carregando={gerar.isPending} onClick={() => gerar.mutate()}><RefreshCw size={14} /> Atualizar agora</Botao>}
+          {aba === "dia" && perfil.perfil === "gestor" && <Botao carregando={gerar.isPending} onClick={() => gerar.mutate()}><RefreshCw size={14} /> Atualizar agora</Botao>}
         </div>
       </div>
       {d.secoes.map((s) => (
