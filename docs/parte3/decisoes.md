@@ -266,3 +266,12 @@ Testes novos: contrato completo na API, decisões (aceitar abre a OS; rejeitar e
 | X5 relatório semanal | — | `GET /relatorio/semanal` (e `.md`), aba na tela do briefing. Mesmo formato do briefing: acertômetro da semana, decisões e retorno, alertas preventivos e anomalias, tendências (P6, P8, P7, fim de vida) e saúde dos modelos | Gerado sob demanda, sem IA, sem tabela nova |
 | X6 modo apresentação | — | Botão "Apresentar" (ou `?apresentar` na URL): painel com o roteiro da demonstração, o que mostrar e o que dizer em cada passo; navega sozinho para a tela do passo. PageDown e PageUp avançam e voltam (as teclas que os passadores de slide enviam); Esc recolhe | Setas conflitariam com o controle de horário da tela "Amanhã" |
 | X7 ética e limites | página | Tela `/previsao/etica` e `docs/parte3/etica-e-limites.md` | — |
+
+## Fase 14 (documentação e roteiro)
+
+| Ponto | Especificação | Implementado | Motivo |
+|---|---|---|---|
+| Documentos | README, `previsoes.md`, `roteiro-demo.md`, `docs/uso-de-ia.md` | Os quatro; o README ganhou a seção completa da Parte 3 (modelos, telas, API, documentos) | — |
+| Roteiro, passo 3 | "+2 equipes da Zona Sul" | O roteiro não fixa a origem nem o número de equipes | Saem da otimização com a escala do dia; fixar no texto faria a demonstração contradizer a tela |
+| Roteiro, passo 2 | "Amanhã" sexta 20 h | O show do Pacaembu cai na primeira sexta depois da criação do banco; o roteiro manda criar o banco de 1 a 3 dias antes, ou cadastrar o show pela API e recalcular | A tela mostra 72 h |
+| Roteiro, passos 6 e 7 | separados | Um passo só, na central | Anomalia e alerta preventivo ficam na mesma tela |

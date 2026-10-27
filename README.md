@@ -1,7 +1,8 @@
-# Atalaia — Inventário e Central de Operações da Cidade
+# Atalaia — Inventário, Central de Operações e Cidade Preditiva
 
 - **Parte 1 — Inventário inteligente:** equipamentos de segurança e trânsito e agentes de campo, com formulário que muda conforme o tipo, máquina de estados com automações, score de saúde explicado e painel de qualidade.
 - **Parte 2 — Central de operações:** uma tela única com mapa vivo, indicadores, alertas priorizados e situação de cada região, alimentada por um motor que interpreta cada sinal recebido. Responde à pergunta do enunciado: "se algo estiver acontecendo na cidade agora, PROMETHEUS conseguirá perceber?".
+- **Parte 3 — Cidade Preditiva:** previsões de falha de equipamentos, ocorrências e risco por região, reforço de equipes, anomalias e tendências, cada uma explicada, comparada com uma referência simples e transformada numa ação que o gestor aceita ou rejeita.
 
 Documentos de origem: `Atalaia — Parte 1 Inventário Inteligente da Cidade.pdf` e `Atalaia — Parte 2 Solução da Central de Operações.pdf`.
 
@@ -18,6 +19,8 @@ Na primeira subida o banco é criado, o seed gera 20 mil equipamentos com anos d
 
 | Endereço | O que é |
 |---|---|
+| http://localhost:5173/previsao/briefing | **Cidade Preditiva** (Parte 3): briefing do dia; o menu leva às demais telas |
+| http://localhost:5173/amanha | Risco previsto das próximas 72 h (Parte 3) |
 | http://localhost:5173/central | **Central de operações** (Parte 2) |
 | http://localhost:5173/central?sala=1 | Modo sala de situação (tela cheia para TV) |
 | http://localhost:5173 | Inventário (gestor, operadores, técnicos) |
@@ -33,7 +36,7 @@ O `simulador` faz a cidade "respirar": a cada 60 s manda presença e métricas d
 
 | Serviço externo | Se não estiver disponível |
 |---|---|
-| IA (sem `ANTHROPIC_API_KEY` ou sem rede) | Botões de IA do inventário desligados com aviso; resumo do turno e "perguntar ao painel" usam modelo de texto |
+| IA (sem `ANTHROPIC_API_KEY` ou sem rede) | Botões de IA do inventário desligados com aviso; resumo do turno e "perguntar ao painel" usam modelo de texto; o copiloto da Parte 3 responde às perguntas prontas. Previsões, briefing e cenários não dependem de IA |
 | ViaCEP | CEP é opcional; o endereço é digitado |
 | Tiles do OpenStreetMap | Mapa com fundo neutro; pontos, grupos e ícones continuam (são desenhados no navegador) |
 | Redis | A API entrega os eventos em memória, no próprio processo |
@@ -52,28 +55,60 @@ Não há login. O seletor no topo escolhe o perfil, enviado à API em cabeçalho
 
 ---
 
-## Parte 3 — Cidade Preditiva (em construção)
+## Parte 3 — Cidade Preditiva
+
+A Central da Parte 2 vê o que está acontecendo agora; a Parte 3 prevê o que deve acontecer nas próximas horas e semanas, explica por quê e diz o que fazer. Cinco regras valem para tudo:
+
+1. Toda previsão vira uma ação (quem, onde, quando, o quê).
+2. Toda previsão se explica (fatores em linguagem simples, dados usados).
+3. Toda previsão prova que funciona (comparada com uma referência simples e com o que aconteceu).
+4. O humano decide (Aceitar, Ajustar, Rejeitar com motivo; tudo registrado).
+5. Prevê lugares, períodos e equipamentos, nunca pessoas.
+
+O que cada modelo prevê, com que dados, como ajuda e quanto acerta: **[docs/parte3/previsoes.md](docs/parte3/previsoes.md)**.
+
+### Os modelos
+
+| Módulo | O que prevê | Resultado contra a referência (backtest) |
+|---|---|---|
+| P1 | Chance de cada equipamento falhar em 7 e 30 dias | Dos 50 mais apontados na semana, 15% falham (média do tipo: 4%) |
+| P2 | Ocorrências por região e hora, 72 h | Erro médio 1,24 × 1,33 (média da mesma hora em 8 semanas) |
+| P3 | Índice de risco 0–100 por região e período | Composto de P1, P2, cobertura, escala e contexto |
+| P4 | Reforço de equipes (otimização) | Risco não coberto 63% menor nas 72 h |
+| P5 | Anomalias em equipamentos e regiões | 6 de 6 anomalias plantadas, nenhum alarme falso |
+| P6 | Disponibilidade em 30 e 90 dias | Erro 32% menor em 90 dias |
+| P7 | Risco de furto em 30 dias | AUC 0,73 × 0,59 |
+| P8 | Carga de manutenção, 4 semanas | Erro 31% menor |
+
+### As telas
 
 | Endereço | O que é |
 |---|---|
-| http://localhost:5173/previsao/briefing | **Briefing diário** (6 h): risco do dia, reforços, manutenções, anomalias, contexto e o acertômetro de ontem; baixa em Markdown |
+| http://localhost:5173/previsao/briefing | **Briefing diário** (6 h): risco do dia, reforços, manutenções, anomalias, contexto e o acertômetro de ontem; baixa em Markdown. Aba com o relatório semanal |
 | http://localhost:5173/amanha | **Amanhã**: mapa de risco das próximas 72 h, recomendações e contexto (feriados, eventos, clima editável) |
 | http://localhost:5173/previsao/equipamentos | Equipamentos em risco de falha (7 e 30 dias), com OS preventiva em lote |
 | http://localhost:5173/previsao/equipes | Planejamento de equipes: escala atual × recomendada |
 | http://localhost:5173/previsao/cenarios | **Cenários "e se"**: evento novo ou cancelado, chuva, equipes a mais ou a menos, equipamentos fora, preventivas; compara com hoje e salva com nome |
-| http://localhost:5173/previsao/decisoes | **Decisões e retorno**: quem decidiu o quê e por quê, e o que aconteceu depois (aceitas × rejeitadas) |
+| http://localhost:5173/previsao/tendencias | Disponibilidade prevista por região ("se nada mudar" × "seguindo o P1") e carga de manutenção |
+| http://localhost:5173/previsao/furtos | Risco de furto por equipamento e bairro |
+| http://localhost:5173/previsao/expansao | Onde uma câmera nova cobriria mais ocorrências e evitaria mais furtos |
+| http://localhost:5173/previsao/fim-de-vida | Trocar ou consertar: risco atual × "como se fosse novo" |
+| http://localhost:5173/previsao/decisoes | **Decisões e retorno**: quem decidiu o quê e por quê, e o que aconteceu depois |
 | http://localhost:5173/previsao/copiloto | **Copiloto**: perguntas em português respondidas com os dados do sistema; com `ANTHROPIC_API_KEY`, o Claude consulta as previsões por ferramentas; sem chave, perguntas prontas |
-| http://localhost:5173/previsao/confianca | **Confiança dos modelos**: backtest contra a média histórica, calibração, o que pesa, padrões descobertos × plantados, acertômetro (previsto × real) e retreino |
+| http://localhost:5173/previsao/confianca | **Confiança dos modelos**: backtest contra a referência, calibração, o que pesa, padrões descobertos × plantados, acertômetro, monitor dos modelos e retreino |
+| http://localhost:5173/previsao/etica | Ética e limites |
 
-Na central, os **alertas preventivos** (risco alto na região nas próximas 6 h, equipamento com alta chance de falhar e sem OS, falta de agentes prevista) aparecem com visual próprio ("Previsão · previsto para… · em 3 h") e o botão "Ver previsão" abre o cartão. A camada "Risco previsto (próximas 6 h)" pinta as regiões pelo índice previsto. Esses alertas não pesam na saúde atual da região e se resolvem sozinhos quando o período passa, a OS é aberta ou o reforço é aceito.
+Toda previsão aparece num **Cartão de Previsão** com três partes fixas: "O que estamos prevendo", "Com base em quê" e "Como isso ajuda", mais a qualidade do modelo contra a média histórica, a confiança (dita abertamente quando é baixa) e os botões Aceitar, Ajustar e Rejeitar. Aceitar executa: abre a OS preventiva ou move o turno só no período recomendado.
 
-**Primeiro start:** se ainda não há modelo treinado, a API treina sozinha em segundo plano (cerca de 3 minutos) e as telas de previsão mostram o progresso. Depois, o agendador refaz P2, P3 e P4 de hora em hora (com os alertas preventivos e a conferência do acertômetro) e P1 todo dia às 5 h.
+Na central, os **alertas preventivos** (risco alto na região nas próximas 6 h, equipamento com alta chance de falhar e sem OS, falta de agentes prevista, disponibilidade abaixo da meta) e as **anomalias** aparecem com visual próprio ("Previsão · previsto para… · em 3 h") e o botão "Ver previsão" abre o cartão. A camada "Risco previsto (próximas 6 h)" pinta as regiões pelo índice previsto. Esses alertas não pesam na saúde atual da região e se resolvem sozinhos quando a condição some.
 
-Toda previsão aparece num **Cartão de Previsão** com três partes fixas: "O que estamos prevendo", "Com base em quê" e "Como isso ajuda", mais a qualidade do modelo contra a média histórica e os botões Aceitar, Ajustar e Rejeitar.
+**Primeiro start:** se ainda não há modelo treinado, a API treina sozinha em segundo plano (cerca de 3 minutos) e as telas de previsão mostram o progresso. Depois, o agendador refaz P2, P3 e P4 de hora em hora (com os alertas preventivos, o acertômetro e o retorno das decisões), P1, P6, P7 e P8 às 5h10, P5 a cada 5 minutos e o briefing às 6 h.
 
-Plano e andamento: [docs/parte3/00-reconhecimento.md](docs/parte3/00-reconhecimento.md), decisões em [docs/parte3/decisoes.md](docs/parte3/decisoes.md).
+**Demonstração:** botão **Apresentar** no topo; o roteiro completo, com a preparação, está em [docs/parte3/roteiro-demo.md](docs/parte3/roteiro-demo.md).
 
-**Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 160 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, descritos em [docs/parte3/padroes-plantados.md](docs/parte3/padroes-plantados.md). Os modelos não leem essa descrição: precisam redescobrir os padrões. O que encontraram está em [docs/parte3/relatorio-descoberta.md](docs/parte3/relatorio-descoberta.md).
+### Dados sintéticos e padrões plantados
+
+**Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 160 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, descritos em [docs/parte3/padroes-plantados.md](docs/parte3/padroes-plantados.md). Os modelos não leem essa descrição: precisam redescobrir os padrões. Resultado: 9 encontrados e 1 com sinal fraco, em [docs/parte3/relatorio-descoberta.md](docs/parte3/relatorio-descoberta.md).
 
 ```bash
 podman compose exec api python -m scripts.verificar_padroes        # confere cada padrão com consultas diretas
@@ -83,6 +118,40 @@ podman compose exec api python -m scripts.relatorio_descoberta     # refaz docs/
 ```
 
 Mesma semente e mesma data de referência geram os mesmos dados. Depois da subida, o `simulador` continua a história no modo contínuo: a cada 5 minutos gera as ocorrências das horas que passaram, com os mesmos padrões e o clima gravado no banco (inclusive o editado pelo operador), e uma vez por hora aplica pela API falhas, furtos e consertos sorteados pelos mesmos padrões.
+
+### API da Parte 3
+
+```
+GET   /previsoes | /previsoes/{id}        contrato completo (POST /previsoes/{id}/decisao decide)
+POST  /previsoes/recalcular               refaz P2, P3, P4 e alertas na hora
+GET   /amanha | /amanha/regioes/{id}      tela "Amanhã"
+GET   /equipamentos/risco | /equipamentos/{id}/risco   (POST /equipamentos/risco/ordens: OS em lote)
+GET   /planejamento/equipes               (POST .../recalcular)
+GET   /recomendacoes | /recomendacoes/retorno          (PATCH /recomendacoes/{id})
+GET   /anomalias                          (POST /anomalias/verificar)
+GET   /tendencias/disponibilidade | /tendencias/manutencao | /furtos/risco | /expansao/sugestoes
+POST  /cenarios/simular                   (GET/POST /cenarios, GET/DELETE /cenarios/{id})
+POST  /copiloto/perguntar                 (GET /copiloto/perguntas-prontas)
+GET   /briefing/hoje | /briefing/{data}   (POST /briefing/gerar) | /relatorio/semanal(.md)
+GET   /modelos | /modelos/acertometro | /modelos/padroes-descobertos | /modelos/monitor | /modelos/treino
+POST  /modelos/treinar
+GET   /risco-previsto                     camada da central
+GET   /equipamentos/fim-de-vida
+GET   /ocorrencias | /eventos-cidade | /clima/previsao | /calendario | /escala   (POST/PUT para registrar e editar)
+```
+
+### Documentos da Parte 3
+
+| Documento | Conteúdo |
+|---|---|
+| [previsoes.md](docs/parte3/previsoes.md) | O que cada modelo prevê, com que dados, como ajuda e quanto acerta |
+| [roteiro-demo.md](docs/parte3/roteiro-demo.md) | Roteiro da demonstração e preparação |
+| [padroes-plantados.md](docs/parte3/padroes-plantados.md) | Os padrões que o gerador planta e como conferir |
+| [relatorio-descoberta.md](docs/parte3/relatorio-descoberta.md) | O que os modelos encontraram × o que foi plantado |
+| [decisoes.md](docs/parte3/decisoes.md) | Decisões técnicas e divergências da especificação, fase a fase |
+| [etica-e-limites.md](docs/parte3/etica-e-limites.md) | O que o sistema não faz e por quê |
+| [00-reconhecimento.md](docs/parte3/00-reconhecimento.md) | Reconhecimento inicial e plano |
+| [uso-de-ia.md](docs/uso-de-ia.md) | Como a IA foi usada no desenvolvimento e dentro do sistema |
 
 ---
 
@@ -265,9 +334,10 @@ Estrutura:
 - `backend/app/services`: **motor** de interpretação, consultas da **central**, **barramento** de eventos, **simulação** e **resumo**.
 - `backend/app/routers`: a API (`central.py` e `alertas.py` são da Parte 2).
 - `backend/scripts`: seed, preparação da central e da Parte 3, gerador de histórico, verificação dos padrões e simulador.
-- `backend/app/preditivo`: Parte 3 (calendário, clima, padrões plantados, geradores, modo contínuo).
+- `backend/app/preditivo`: Parte 3 (geradores e padrões plantados, variáveis, baselines e backtest, um arquivo por modelo `p1.py` a `p7.py`, otimização, cartões, alertas preventivos, cenários, copiloto, briefing, treino e agendador).
+- `frontend/src/preditivo/` e `frontend/src/pages/` (Amanha, Confianca, Cenarios...): telas da Parte 3; `components/ModoApresentacao.tsx` guarda o roteiro da demonstração.
 - `frontend/src/pages/Central.tsx` e `frontend/src/central/`: a tela da central (mapa, painéis, WebSocket).
 
-Testes: 211 no backend (73 da Parte 1, 39 da Parte 2, 99 da Parte 3 até agora: cada regra dispara com o evento certo e não sem ele, criticidade, supressão, escalonamento, índice da região, indicadores comparados com contagens no banco, linha do tempo, simulação; na Parte 3, migrações, calendário, clima, ocorrências, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1, P2 e P3 superando os baselines, índice de risco, otimização de equipes respeitando as restrições, anomalias plantadas encontradas e série normal sem alarme, contrato de previsão e decisões, alertas preventivos que disparam e se resolvem, acertômetro, cenários (menos equipes aumenta o risco não coberto, evento aumenta ocorrências perto), retorno das decisões, padrões descobertos, copiloto com e sem IA, briefing) e 21 no frontend.
+Testes: 226 no backend (73 da Parte 1, 39 da Parte 2, 114 da Parte 3) e 24 no frontend. Na Parte 3: migrações, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1 e P2 superando as referências (o teste falha se não superarem), contrato com campos não vazios, índice de risco em casos conhecidos, otimização de equipes respeitando as restrições e heurística de reserva válida, anomalias plantadas encontradas e série normal sem alarme, decisões (rejeitar exige motivo, aceitar executa), alertas preventivos que disparam e se resolvem, acertômetro, cenários (menos equipes aumenta o risco não coberto, evento aumenta ocorrências perto), retorno das decisões, padrões descobertos, copiloto com e sem IA, briefing, P6, P7, P8, expansão e extras.
 
 Como a IA foi usada no desenvolvimento e nos recursos do sistema: [docs/uso-de-ia.md](docs/uso-de-ia.md).

@@ -104,3 +104,57 @@ Dois recursos usam o Claude, sempre com fatos calculados pela API e com alternat
 - **Perguntar ao painel** (`GET /central/perguntar?q=`): a região (ou o bairro) citada é achada na pergunta sem IA, ignorando acento e caixa. A API reúne índice, alertas, indicadores e agentes da região e monta uma resposta; com IA, o Claude responde à pergunta só com esses fatos.
 
 Os dois usam a mesma chamada da Parte 1 (`services/ia.py`: saída estruturada em JSON Schema e fallback do servidor em caso de recusa).
+
+---
+
+# Parte 3: Cidade Preditiva
+
+## IA no desenvolvimento
+
+A Parte 3 foi construída com o Claude Code (Claude Opus 5.5) a partir do prompt da Parte 3, condensado em [parte3/especificacao.md](parte3/especificacao.md). O trabalho começou por um reconhecimento do código das Partes 1 e 2 e um plano enxuto ([parte3/00-reconhecimento.md](parte3/00-reconhecimento.md)), aprovado pela equipe antes de qualquer código, com as decisões que só a equipe podia tomar: recriar o banco com o histórico novo, prever por bairro e somar por região, deixar de fora os padrões 9 e 10.
+
+Depois, 14 fases com um commit cada, na ordem do documento: dados novos; gerador com padrões plantados; variáveis sem vazamento, baselines e backtest; P1; P2 e P3; P4; P5; contrato, cartão e telas; alertas preventivos e acertômetro; cenários, retorno e padrões descobertos; briefing e copiloto; P6, P7, P8 e expansão; extras; documentação. Toda divergência da especificação foi registrada em [parte3/decisoes.md](parte3/decisoes.md), com o motivo.
+
+Cada fase foi conferida de três jeitos: testes automáticos (que falham se um modelo não superar a referência), métricas do backtest no banco gerado e capturas de tela do navegador sem interface gráfica.
+
+### Onde a IA ajudou
+
+- Gerador determinístico da história da cidade com os padrões plantados, e as consultas que conferem cada padrão.
+- Variáveis por equipamento × dia e bairro × hora com teste de vazamento, baselines e backtest de origem móvel.
+- Modelos (LightGBM, regressão logística, ETS, STL, Isolation Forest), calibração, intervalos conformais e a tradução das contribuições SHAP em fatores para o gestor.
+- Otimização de equipes (`scipy.optimize.milp`) com heurística de reserva.
+- Contrato de previsão, Cartão de Previsão e as telas.
+- Contrafactuais para conferir se os modelos redescobriram os padrões, sem que eles lessem a descrição.
+
+### Problemas encontrados e corrigidos
+
+| Problema | Como apareceu | Correção |
+|---|---|---|
+| Escala sintética deixava as regiões Leste e Norte sem nenhuma equipe | Conferência da escala por região na fase de P3 | Equipes distribuídas na proporção do número de bairros |
+| Otimizador trocava equipes entre duas regiões no mesmo período | Primeira tela do planejamento | Restrição nova: uma região não cede e recebe no mesmo período (a redução do risco caiu de 52% para 46%, mas o plano ficou legível) |
+| P7 dizia que câmera mais longe reduzia o risco de furto | Contrafactual da tela de Expansão com o sinal trocado | Restrição monótona no LightGBM (AUC 0,733 em vez de 0,746, mas com sentido) |
+| ETS na série diária de disponibilidade perdia para a média móvel | Backtest de P6 | ETS sobre as médias semanais |
+| Isolation Forest sozinho acusava qualquer queda de uma hora | Alarmes falsos nas séries normais | Virou segunda opinião; a regra é STL com escore robusto |
+| Treino de P1 quebrava num corte do backtest sem nenhuma falha (AUC indefinida) | Erro no log do treino | AUC mostrada como "—" nesse corte (commit `36596b3`) |
+| Cenário com menos equipes "reduzia" ocorrências | P2 aprendeu que mais agentes registram mais ocorrências (viés de registro) | Nos cenários, mudar equipes muda só o índice e o risco não coberto, nunca as ocorrências previstas |
+| Treino do primeiro start morria quando o `--reload` recarregava a API | Desenvolvimento com o contêiner recarregando o código | O estado guarda o processo; treino órfão é refeito no próximo start |
+| Modelos treinados na máquina não abriam no contêiner | Caminho gravado inexistente | Busca pelo nome na pasta dos modelos |
+| Testes falhavam quando a suíte cruzava a virada da hora | Dois lotes de previsão no banco | Os testes olham só o lote mais recente |
+| Rótulos no mapa exigiam fontes baixadas da internet | Mapa sem texto offline | Nome e índice aparecem ao passar o mouse e na faixa de regiões |
+| PuLP 4 não traz mais o CBC | Escolha do solver na fase 1 | `scipy.optimize.milp` (HiGHS), offline |
+
+### O que a equipe decidiu
+
+A IA propôs; a equipe aprovou o plano, o escopo enxuto, a recriação do banco, a unidade espacial e o que ficou de fora (X1, X2, detector de operação de P5, P1 no score de saúde da Parte 1). As cinco regras do enunciado (ação, explicação, prova, decisão humana, nunca pessoas) foram usadas como critério de revisão de cada tela.
+
+## IA dentro do sistema
+
+**As previsões não usam IA generativa.** P1 a P8, o briefing, o relatório semanal, os cenários e os alertas são modelos estatísticos e regras sobre os dados do sistema: saem iguais todo dia e funcionam sem internet.
+
+O único recurso com o Claude é o **copiloto** (`backend/app/preditivo/copiloto.py`, `POST /copiloto/perguntar`):
+
+- **Com `ANTHROPIC_API_KEY`:** loop de ferramentas com o `claude-opus-5-5` (esforço médio, fallback do servidor ligado). São 9 ferramentas estritas que chamam as mesmas funções dos endpoints: risco por região, ocorrências previstas, equipamentos em risco, reforços, anomalias, alertas preventivos, qualidade dos modelos, contexto do dia e simulação de cenário. No máximo 8 passos por pergunta.
+- **Instruções principais do prompt de sistema:** usar as ferramentas para todo número, região, horário ou equipamento citado, sem inventar dados; começar pela resposta, depois o porquê e a ação; citar o id da previsão (`[prev_123]`), que a tela abre como cartão; dizer quando a confiança é moderada ou baixa; recomendar, não decidir; falar de lugares, períodos e equipamentos, nunca de pessoas.
+- **Limites:** só lê e simula; não decide nem grava nada.
+- **Sem chave, sem rede ou com erro:** 8 perguntas prontas respondidas por regras sobre as mesmas consultas (incluindo dois cenários: chuva forte amanhã de manhã e 2 equipes a menos no Centro). Texto livre é associado a uma pronta por palavras-chave. A tela diz qual modo respondeu e por quê.
+- Os testes em `backend/tests/test_copiloto.py` cobrem os dois modos, com respostas do modelo simuladas.
