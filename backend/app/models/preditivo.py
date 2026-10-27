@@ -214,3 +214,16 @@ class SerieEquipamentoHora(Base):
     metrica: Mapped[str] = mapped_column(String(30), primary_key=True)  # infracoes, online_min
     em: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     valor: Mapped[float] = mapped_column(Float)
+
+
+class Cenario(Base):
+    """Cenário "e se" salvo pelo gestor: as mudanças e o resultado da simulação no momento em que foi salvo."""
+
+    __tablename__ = "cenario"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(String(120))
+    descricao: Mapped[str | None] = mapped_column(Text)
+    parametros: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    resultado: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    criado_por: Mapped[str | None] = mapped_column(String(120))
+    criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

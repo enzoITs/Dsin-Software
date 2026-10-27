@@ -88,14 +88,14 @@ def mudar_situacao(
     acoes: list[str] = []
 
     if atual == S.nao_instalado and nova == S.operacional and equip.data_instalacao is None:
-        equip.data_instalacao = agora.date()
+        equip.data_instalacao = derivados.dia_local(agora)
 
     if nova == S.mau_funcionamento:
         db.add(
             PlanoManutencao(
                 equipamento_id=equip.id,
                 tipo=TipoPlano.imediata,
-                proxima_data=agora.date(),
+                proxima_data=derivados.dia_local(agora),
                 descricao=f"Manutenção imediata: {motivo.strip()}",
             )
         )
@@ -120,7 +120,7 @@ def mudar_situacao(
 
     if nova == S.operacional:
         _fechar_ordens(db, equip.id, agora)
-        if _garantir_plano_periodico(db, equip, agora.date()):
+        if _garantir_plano_periodico(db, equip, derivados.dia_local(agora)):
             acoes.append("plano_periodico_criado")
 
     db.flush()
@@ -190,17 +190,19 @@ def registrar_manutencao(
     db.add(registro)
 
     if resultado == "concluida":
+        # Data do serviço no horário da cidade: um registro às 22 h não pode contar como o dia seguinte (UTC).
+        dia = derivados.dia_local(executada_em)
         planos = [plano] if plano else list(
             db.scalars(
                 select(PlanoManutencao).where(
                     PlanoManutencao.equipamento_id == equip.id,
                     PlanoManutencao.ativo.is_(True),
-                    PlanoManutencao.proxima_data <= executada_em.date(),
+                    PlanoManutencao.proxima_data <= dia,
                 )
             )
         )
         for p in planos:
-            _avancar_plano(p, executada_em.date())
+            _avancar_plano(p, dia)
 
     eventos: list[dict] = []
     motivo = f"Manutenção registrada por {tecnico.strip()}" + (f": {descricao}" if descricao else "")

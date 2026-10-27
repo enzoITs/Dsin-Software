@@ -172,6 +172,7 @@ export default function Amanha() {
           <Link to="/central" className="underline">Central</Link>
           <Link to="/previsao/equipamentos" className="underline">Equipamentos em risco</Link>
           <Link to="/previsao/equipes" className="underline">Planejamento de equipes</Link>
+          <Link to="/previsao/cenarios" className="underline">Cenários</Link>
           <Link to="/previsao/confianca" className="underline">Confiança dos modelos</Link>
         </nav>
         <SeletorPerfil />

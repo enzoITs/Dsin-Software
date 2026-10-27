@@ -117,6 +117,15 @@ def recomendacoes(db: DB, estado: EstadoRecomendacao | None = None, tipo: str | 
     return [_rec_json(r) for r in db.scalars(q.order_by(Recomendacao.id.desc()).limit(limite))]
 
 
+@router.get("/recomendacoes/retorno")
+def retorno_recomendacoes(db: DB, dias: Annotated[int, Query(ge=1, le=365)] = 30):
+    """Retorno das recomendações (C5): decisões, motivos e o que aconteceu depois, aceitas × rejeitadas."""
+    from app.preditivo import retorno
+
+    retorno.conferir(db)
+    return retorno.resumo(db, dias)
+
+
 @router.patch("/recomendacoes/{rec_id}")
 def decidir_recomendacao(rec_id: int, body: DecisaoIn, db: DB, ctx: Ctx):
     r = db.get(Recomendacao, rec_id)

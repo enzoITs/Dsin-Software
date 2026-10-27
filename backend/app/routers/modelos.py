@@ -113,6 +113,16 @@ def acertometro_(db: DB, dias: Annotated[int, Query(ge=1, le=60)] = 7):
     return acertometro.resumo(db, dias)
 
 
+@router.get("/modelos/padroes-descobertos")
+def padroes_descobertos(db: DB, ctx: Ctx, refazer: bool = False):
+    """O que os modelos aprenderam × os padrões plantados no gerador (Q2). Em cache até os modelos mudarem."""
+    from app.preditivo import descoberta
+
+    if refazer:
+        ctx.exigir_gestor()
+    return descoberta.obter(db, refazer=refazer)
+
+
 @router.get("/modelos/treino")
 def treino(db: DB):
     return servico.estado_treino(db)

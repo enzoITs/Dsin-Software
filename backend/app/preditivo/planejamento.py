@@ -45,13 +45,19 @@ def entradas(db: Session, origem: str) -> list[dict]:
     p2h = pd.DataFrame(db.execute(text("""
         SELECT regiao_id, horizonte_inicio em, valor, faixa_inferior lo, faixa_superior hi, (detalhe->>'normal')::float normal
         FROM previsao WHERE modulo = 'P2' AND detalhe->>'origem' = :o"""), {"o": origem}).mappings().all())
-    ini_total, fim_total = p3p.ini.min(), p3p.fim.max()
-    esc = pd.DataFrame(db.execute(text("""
+    esc = escala(db, p3p.ini.min(), p3p.fim.max())
+    return montar_periodos(p3p, p2h, esc, limites.carregar(db)["prev_agentes_por_ocorrencia"])
+
+
+def escala(db: Session, inicio, fim) -> pd.DataFrame:
+    return pd.DataFrame(db.execute(text("""
         SELECT s.id, s.equipe, s.regiao_id, r.nome regiao, o.sigla orgao, s.inicio_em, s.fim_em, s.agentes
         FROM escala_agente s JOIN regiao r ON r.id = s.regiao_id JOIN orgao o ON o.id = s.orgao_id
-        WHERE s.fim_em > :a AND s.inicio_em < :b"""), {"a": ini_total, "b": fim_total}).mappings().all())
-    cfg = limites.carregar(db)
-    fator = cfg["prev_agentes_por_ocorrencia"]
+        WHERE s.fim_em > :a AND s.inicio_em < :b"""), {"a": inicio, "b": fim}).mappings().all())
+
+
+def montar_periodos(p3p: pd.DataFrame, p2h: pd.DataFrame, esc: pd.DataFrame, fator: float) -> list[dict]:
+    """Períodos para a otimização a partir de P3 por período, P2 por hora e a escala (sem banco: serve aos cenários)."""
     periodos = []
     for (ini, fim), regs in p3p.groupby(["ini", "fim"]):
         horas = p2h[(p2h.em >= ini) & (p2h.em < fim)]
@@ -93,13 +99,15 @@ def texto_reforco(per: dict, destino: str, movs: list[dict], info: dict) -> str:
 
 
 def planejar(db: Session, origem: str | None = None, max_deslocamentos: int | None = None, min_por_regiao: int | None = None,
-             fixas: set[str] | None = None) -> list[dict]:
+             fixas: set[str] | None = None, periodos: list[dict] | None = None) -> list[dict]:
     cfg = limites.carregar(db, forcar=True)
-    origem = origem or ultima_origem(db)
-    if not origem:
-        return []
+    if periodos is None:
+        origem = origem or ultima_origem(db)
+        if not origem:
+            return []
+        periodos = entradas(db, origem)
     saida = []
-    for per in entradas(db, origem):
+    for per in periodos:
         r = p4.otimizar(per["equipes"], per["regioes"], max_deslocamentos or cfg["prev_p4_max_deslocamentos"],
                         cfg["prev_p4_min_equipes"] if min_por_regiao is None else min_por_regiao, fixas,
                         tempo_max_s=cfg["prev_p4_tempo_max_s"])

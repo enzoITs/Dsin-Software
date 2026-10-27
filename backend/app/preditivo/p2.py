@@ -135,7 +135,7 @@ def proporcoes(f: V.Fontes, origem: pd.Timestamp, semanas: int = 8) -> pd.DataFr
     oc = f.ocorrencias[(f.ocorrencias.em < origem) & (f.ocorrencias.em >= origem - pd.Timedelta(weeks=semanas))]
     reg = dict(zip(f.bairros.id, f.bairros.regiao))
     local = oc.em.dt.tz_convert(V.FUSO)
-    x = pd.DataFrame({"regiao": oc.bairro_id.map(reg), "util": local.dt.dayofweek.to_numpy() < 5,
+    x = pd.DataFrame({"regiao": oc.bairro_id.map(reg), "util": local.dt.day_of_week.to_numpy() < 5,
                       "hora": local.dt.hour, "categoria": oc.categoria})
     n = x.groupby(["regiao", "util", "hora", "categoria"]).size()
     return (n / n.groupby(level=[0, 1, 2]).transform("sum")).rename("proporcao").reset_index()

@@ -4,6 +4,7 @@ Cada linha já traz tudo o que o Cartão de Previsão mostra: o que se prevê, c
 fatores, como ajuda, a ação recomendada e a qualidade do modelo contra o baseline.
 """
 
+import dataclasses
 from datetime import date, datetime, timezone
 
 import pandas as pd
@@ -103,16 +104,21 @@ def _eventos_por_regiao(f: V.Fontes, horas: pd.DatetimeIndex) -> dict[tuple, tup
     return saida
 
 
-def _situacao_regioes(db: Session, f: V.Fontes, origem: pd.Timestamp) -> dict[str, dict]:
+def risco_alto_p1(db: Session) -> set[int]:
+    """Equipamentos com risco de falha alto ou muito alto na última P1 de 7 dias."""
+    return {i for (i,) in db.execute(text("""
+        SELECT p.alvo_id FROM previsao p
+        WHERE p.modulo = 'P1' AND p.nivel IN ('ALTO', 'MUITO_ALTO') AND p.horizonte_fim - p.horizonte_inicio = interval '7 days'
+          AND p.horizonte_inicio = (SELECT max(horizonte_inicio) FROM previsao WHERE modulo = 'P1')"""))}
+
+
+def _situacao_regioes(db: Session, f: V.Fontes, origem: pd.Timestamp, risco: set[int] | None = None) -> dict[str, dict]:
     """Equipamentos fixos por região na origem: em serviço, fora de operação, em risco alto (última P1 de 7 dias)."""
     estado = V._estado_em(f.historico, origem)
     fixos = f.equipamentos[~f.equipamentos.movel & f.equipamentos.regiao.notna()].copy()
     fixos["estado"] = fixos.id.map(estado)
     fixos = fixos[fixos.estado.isin(["operacional", "mau_funcionamento", "em_manutencao", "furtado"])]
-    risco = {i for (i,) in db.execute(text("""
-        SELECT p.alvo_id FROM previsao p
-        WHERE p.modulo = 'P1' AND p.nivel IN ('ALTO', 'MUITO_ALTO') AND p.horizonte_fim - p.horizonte_inicio = interval '7 days'
-          AND p.horizonte_inicio = (SELECT max(horizonte_inicio) FROM previsao WHERE modulo = 'P1')"""))}
+    risco = risco_alto_p1(db) if risco is None else risco
     fixos["risco"] = fixos.id.isin(risco) & (fixos.estado == "operacional")
     fixos["vig"] = fixos.prefixo.astype(str).isin(["CAM", "RAD"])
     saida = {}
@@ -126,8 +132,6 @@ def _situacao_regioes(db: Session, f: V.Fontes, origem: pd.Timestamp) -> dict[st
 
 def prever_p2_p3(db: Session, f: V.Fontes | None = None, agora: datetime | None = None) -> dict:
     """Ocorrências (P2) e índice de risco (P3) por região nas próximas 72 h, a partir da hora cheia atual."""
-    from app.preditivo import p2, p3
-
     cfg = limites.carregar(db, forcar=True)
     mv, modelo = artefatos.ativo(db, "ocorrencias_regiao_hora")
     if modelo is None:
@@ -135,9 +139,32 @@ def prever_p2_p3(db: Session, f: V.Fontes | None = None, agora: datetime | None 
     agora = agora or datetime.now(timezone.utc)
     origem = pd.Timestamp(agora).tz_convert("UTC").floor("h")
     f = f or V.carregar(db)
+    p2_linhas, p3_linhas = calcular_p2_p3(db, f, origem, cfg, mv, modelo)
+    db.execute(text("DELETE FROM previsao WHERE modulo IN ('P2', 'P3') AND detalhe->>'origem' = :o"), {"o": origem.isoformat()})
+    db.execute(insert(Previsao), p2_linhas)
+    db.execute(insert(Previsao), p3_linhas)
+    db.commit()
+    return {"p2": len(p2_linhas), "p3": len(p3_linhas)}
+
+
+def calcular_p2_p3(db: Session, f: V.Fontes, origem: pd.Timestamp, cfg: dict, mv, modelo,
+                   risco: set[int] | None = None, escala_p3: pd.DataFrame | None = None) -> tuple[list[dict], list[dict]]:
+    """Linhas de P2 e P3 (no formato da tabela `previsao`) sem gravar nada. Os cenários "e se" usam com fontes alteradas.
+
+    `escala_p3`: escala usada só no índice de risco (componente de agentes). Num cenário com menos equipes, a
+    previsão de ocorrências continua com a escala real: menos agentes registram menos ocorrências, mas não
+    diminuem o que acontece na rua (viés de registro).
+    """
+    from app.preditivo import p2, p3
+
     linhas = V.bairro_hora(f, [origem], alvo=False, semanas=cfg["prev_p2_semanas_baseline"])
     linhas["previsto"] = modelo.prever(linhas)
     fat = p2.fatores_regiao(modelo, linhas)
+    if escala_p3 is not None:
+        horas = pd.DatetimeIndex(sorted(linhas.em.unique()))
+        por_reg = V._agentes_por_regiao_hora(dataclasses.replace(f, escala=escala_p3), horas)
+        pos = {h: i for i, h in enumerate(horas)}
+        linhas["agentes"] = [float(por_reg[r][pos[h]]) if r in por_reg else 0.0 for r, h in zip(linhas.regiao_id, linhas.em)]
     reg = linhas.groupby(["em", "regiao", "regiao_id"], observed=True).agg(
         previsto=("previsto", "sum"), normal_hora=("media_mesma_hora", "sum"), agentes=("agentes", "first"),
         chuva_mm=("chuva_mm", "first"), hora=("hora", "first")).reset_index()
@@ -154,13 +181,12 @@ def prever_p2_p3(db: Session, f: V.Fontes | None = None, agora: datetime | None 
     props = p2.proporcoes(f, origem)
     tempestade = f.clima.set_index("em").alerta_tempestade.to_dict()
     eventos = _eventos_por_regiao(f, pd.DatetimeIndex(reg.em.unique()))
-    situacao = _situacao_regioes(db, f, origem)
+    situacao = _situacao_regioes(db, f, origem, risco)
     vazio = {"fixos": 0, "indisponiveis": 0, "alto_risco": 0, "vigilancia": 0, "vigilancia_operando": 0, "vigilancia_risco": 0}
     pesos = cfg["prev_p3_pesos"]
     q2 = qualidade(mv, "mae", True, cfg)
     q2["metrica"] = "MAE por região e hora"
 
-    db.execute(text("DELETE FROM previsao WHERE modulo IN ('P2', 'P3') AND detalhe->>'origem' = :o"), {"o": origem.isoformat()})
     p2_linhas, p3_linhas, entradas = [], [], {}
     for x in reg.itertuples():
         regiao = str(x.regiao)
@@ -206,10 +232,7 @@ def prever_p2_p3(db: Session, f: V.Fontes | None = None, agora: datetime | None 
         p3_linhas.append(_linha_p3(*(p3.indice(j, pesos) for j in juntos), rid, regiao, ini, fim,
                                    {"origem": origem.isoformat(), "alvo": {"tipo": "regiao", "id": rid, "nome": regiao, "regiao": regiao},
                                     "hora_local": local.isoformat(), "data_local": dia.isoformat()}, "periodo", per, mv, q2, local))
-    db.execute(insert(Previsao), p2_linhas)
-    db.execute(insert(Previsao), p3_linhas)
-    db.commit()
-    return {"p2": len(p2_linhas), "p3": len(p3_linhas)}
+    return p2_linhas, p3_linhas
 
 
 def _linha_p3(r: dict, r_lo: dict, r_hi: dict, rid: int, regiao: str, ini, fim, comum: dict, granularidade: str,

@@ -6,9 +6,11 @@ import type { Perfil } from "../api/client";
 const LINKS = [
   { to: "/central", rotulo: "Central de operações" },
   { to: "/amanha", rotulo: "Amanhã" },
-  { to: "/previsao/equipamentos", rotulo: "Equipamentos em risco" },
-  { to: "/previsao/equipes", rotulo: "Planejamento de equipes" },
-  { to: "/previsao/confianca", rotulo: "Confiança dos modelos" },
+  { to: "/previsao/equipamentos", rotulo: "Risco de falha" },
+  { to: "/previsao/equipes", rotulo: "Equipes" },
+  { to: "/previsao/cenarios", rotulo: "Cenários" },
+  { to: "/previsao/decisoes", rotulo: "Decisões" },
+  { to: "/previsao/confianca", rotulo: "Confiança" },
   { to: "/", rotulo: "Inventário", fim: true },
   { to: "/equipamentos/novo", rotulo: "Cadastrar" },
   { to: "/agentes", rotulo: "Agentes" },
@@ -51,11 +53,11 @@ export default function Layout() {
           <div className="flex items-baseline gap-3 pb-3">
             <span className="text-[22px] font-bold tracking-[-0.02em]">Atalaia</span>
             <span className="h-[10px] w-[10px] bg-acento" aria-hidden />
-            <span className="text-[12px] text-cinza">Inventário da cidade</span>
+            <span className="text-[12px] text-cinza">Inventário, central e cidade preditiva</span>
           </div>
           <div className="pb-3"><SeletorPerfil /></div>
         </div>
-        <nav className="mx-auto flex max-w-[1400px] gap-0 overflow-x-auto px-4 md:px-8">
+        <nav className="mx-auto flex max-w-[1400px] flex-wrap gap-0 px-4 md:px-8">
           {LINKS.map((l) => (
             <NavLink
               key={l.to}

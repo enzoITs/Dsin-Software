@@ -54,6 +54,9 @@ def _treinar() -> None:
         treinar.treinar(todos=True, log=lambda m: log.info(m))
         with SessionLocal() as db:
             pos_lote(db)
+            from app.preditivo import descoberta
+
+            descoberta.obter(db, refazer=True)
     except Exception:
         log.exception("treino falhou")
 
@@ -84,9 +87,9 @@ def treinar_se_preciso() -> bool:
 
 def pos_lote(db: Session) -> dict:
     """Depois de cada lote de previsões: alertas preventivos e conferência do que já aconteceu."""
-    from app.preditivo import acertometro, preventivos
+    from app.preditivo import acertometro, preventivos, retorno
 
-    return {"conferidas": acertometro.conferir(db), "preventivos": preventivos.verificar(db)}
+    return {"conferidas": acertometro.conferir(db), "preventivos": preventivos.verificar(db), "retorno": retorno.conferir(db)}
 
 
 def lote_hora() -> dict:

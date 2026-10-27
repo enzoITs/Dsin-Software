@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
@@ -315,7 +315,7 @@ def criar_plano(equipamento_id: int, body: PlanoIn, db: DB, ctx: Ctx):
         raise RegraViolada("data_obrigatoria", "Informe a data da próxima manutenção.")
     plano = PlanoManutencao(
         equipamento_id=e.id, tipo=body.tipo,
-        proxima_data=body.proxima_data or date.today(),
+        proxima_data=body.proxima_data or derivados.dia_local(datetime.now(timezone.utc)),
         periodicidade_dias=body.periodicidade_dias if body.tipo == TipoPlano.periodica else None,
         descricao=body.descricao, ativo=True,
     )

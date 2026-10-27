@@ -1,6 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
-import type { Acertometro, Amanha, Cartao, DetalheRegiao, EstadoTreino, Modelos, Plano, Ranking, Recomendacao } from "./tipos";
+import type {
+  Acertometro, Amanha, CenarioParams, CenarioSalvo, Cartao, DetalheRegiao, EstadoTreino, Modelos, OpcoesCenario, PadroesDescobertos, Plano,
+  Ranking, Recomendacao, ResultadoCenario, Retorno,
+} from "./tipos";
 
 export const useAmanha = () =>
   useQuery({ queryKey: ["prev", "amanha"], queryFn: () => api<Amanha>("/amanha"), refetchInterval: 5 * 60_000, retry: false });
@@ -101,3 +104,37 @@ export function useTreinar() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["prev", "treino"] }),
   });
 }
+
+export const useOpcoesCenario = () =>
+  useQuery({ queryKey: ["prev", "cenarios", "opcoes"], queryFn: () => api<OpcoesCenario>("/cenarios/opcoes"), staleTime: 5 * 60_000 });
+
+export const useCenarios = () => useQuery({ queryKey: ["prev", "cenarios", "lista"], queryFn: () => api<CenarioSalvo[]>("/cenarios") });
+
+export const useCenario = (id: number | null) =>
+  useQuery({ queryKey: ["prev", "cenarios", id], enabled: id != null, queryFn: () => api<CenarioSalvo>(`/cenarios/${id}`) });
+
+export const useSimular = () =>
+  useMutation({ mutationFn: (p: CenarioParams) => api<ResultadoCenario>("/cenarios/simular", { method: "POST", body: p }) });
+
+export function useSalvarCenario() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { nome: string; descricao?: string; parametros: CenarioParams }) => api<CenarioSalvo>("/cenarios", { method: "POST", body: b }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev", "cenarios", "lista"] }),
+  });
+}
+
+export function useRemoverCenario() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/cenarios/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prev", "cenarios", "lista"] }),
+  });
+}
+
+export const useRetorno = (dias: number) =>
+  useQuery({ queryKey: ["prev", "retorno", dias], queryFn: () => api<Retorno>("/recomendacoes/retorno", { params: { dias } }) });
+
+export const usePadroes = () =>
+  useQuery({ queryKey: ["prev", "padroes"], queryFn: () => api<PadroesDescobertos>("/modelos/padroes-descobertos"), retry: false,
+             staleTime: 10 * 60_000 });

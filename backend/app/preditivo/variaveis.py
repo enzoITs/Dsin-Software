@@ -84,10 +84,10 @@ def carregar(db: Session) -> Fontes:
     oc = _df(db, """SELECT o.inicio_em em, o.bairro_id, o.regiao_id, o.categoria, o.gravidade
                     FROM ocorrencia o WHERE o.bairro_id IS NOT NULL ORDER BY o.inicio_em""")
     oc["em"] = _utc(oc.em)
-    ev = _df(db, """SELECT nome, inicio_em, fim_em, publico_estimado publico, raio_influencia_m raio,
+    ev = _df(db, """SELECT id, nome, inicio_em, fim_em, publico_estimado publico, raio_influencia_m raio,
                            ST_X(geom) lon, ST_Y(geom) lat FROM evento_cidade WHERE geom IS NOT NULL""")
     ev["inicio_em"], ev["fim_em"] = _utc(ev.inicio_em), _utc(ev.fim_em)
-    esc = _df(db, "SELECT regiao_id, inicio_em, fim_em, agentes FROM escala_agente")
+    esc = _df(db, "SELECT id, regiao_id, inicio_em, fim_em, agentes FROM escala_agente")
     esc["inicio_em"], esc["fim_em"] = _utc(esc.inicio_em), _utc(esc.fim_em)
     b = _df(db, """SELECT b.id, b.nome bairro, b.regiao, r.id regiao_id, ST_AsBinary(b.geom) geom
                    FROM bairro b JOIN cidade c ON c.id = b.cidade_id AND c.tem_lista_bairros

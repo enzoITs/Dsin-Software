@@ -7,6 +7,7 @@ para poucos equipamentos ele roda aqui mesmo; para todos, no verificador a cada 
 """
 
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select, true, update
 from sqlalchemy.orm import Session
@@ -22,6 +23,14 @@ from app.models import (
 from app.models.enums import Situacao, StatusManutencao
 
 DIAS_AVISO_MANUTENCAO = 7
+
+
+FUSO_CIDADE = ZoneInfo("America/Sao_Paulo")
+
+
+def dia_local(t: datetime) -> date:
+    """Data no horário da cidade (às 22 h em São Paulo já é o dia seguinte em UTC)."""
+    return t.astimezone(FUSO_CIDADE).date() if t.tzinfo else t.date()
 
 
 def status_manutencao(proxima: date | None, hoje: date) -> StatusManutencao:
@@ -40,7 +49,7 @@ def _por_equip(db: Session, stmt) -> dict:
 
 def recalcular(db: Session, ids: list[int] | None = None, agora: datetime | None = None) -> dict:
     agora = agora or datetime.now(timezone.utc)
-    hoje = agora.date()
+    hoje = dia_local(agora)
 
     q = select(
         Equipamento.id,

@@ -22,6 +22,7 @@ from app.models.preditivo import (  # noqa: F401
     BacktestResultado,
     Calendario,
     CategoriaOcorrencia,
+    Cenario,
     ClimaHora,
     EscalaAgente,
     EstadoPreditivo,

@@ -113,3 +113,64 @@ export interface Acertometro {
         apontados: number; falharam_apontados: number; esperado_apontados: number; taxa_apontados: number; taxa_geral: number;
         falharam_total: number }[] };
 }
+
+/** Cenários "e se" (C1) */
+export interface CenarioParams {
+  eventos?: { nome?: string; bairro_id?: number; publico: number; inicio?: string; fim?: string; raio_m?: number }[];
+  cancelar_eventos?: number[];
+  clima?: { inicio?: string; fim?: string; chuva_mm?: number; temperatura_c?: number; tempestade?: boolean }[];
+  equipes?: { regiao: string; delta: number; inicio?: string; fim?: string }[];
+  equipamentos_fora?: { codigos?: string[]; regiao?: string; prefixo?: string; quantidade?: number } | null;
+  manutencoes?: { codigos?: string[]; regiao?: string; quantidade?: number } | null;
+}
+
+export interface RegiaoCenario {
+  regiao: string; ocorrencias_base: number; ocorrencias_cenario: number; diferenca_pct: number | null;
+  indice_medio_base: number; indice_medio_cenario: number; indice_max_base: number; indice_max_cenario: number;
+  nivel_max_base: string; nivel_max_cenario: string; periodos_alto_base: number; periodos_alto_cenario: number;
+}
+
+export interface ResultadoCenario {
+  origem: string; parametros: CenarioParams; frases: string[]; regioes: RegiaoCenario[]; segundos?: number;
+  aplicado: Record<string, unknown>;
+  periodos: { inicio: string; fim: string; rotulo: string;
+              regioes: { regiao: string; indice_base: number; nivel_base: string; indice_cenario: number | null; nivel_cenario: string | null }[] }[];
+  equipes: { base: { nao_coberto_escala: number; nao_coberto_otimizado: number; recomendacoes: string[] };
+             cenario: { nao_coberto_escala: number; nao_coberto_otimizado: number; recomendacoes: string[] } };
+}
+
+export interface CenarioSalvo {
+  id: number; nome: string; descricao: string | null; criado_por: string | null; criado_em: string; frases: string[];
+  origem: string | null; parametros?: CenarioParams; resultado?: ResultadoCenario;
+}
+
+export interface OpcoesCenario {
+  regioes: string[]; bairros: { id: number; nome: string; regiao: string }[];
+  eventos: { id: number; nome: string; local_nome: string | null; inicio_em: string; fim_em: string; publico_estimado: number }[];
+  tipos: { prefixo: string; nome: string }[];
+}
+
+/** Retorno das recomendações (C5) */
+export interface Retorno {
+  dias: number; total: number; decididas: number; taxa_aceitacao: number | null; por_estado: Record<string, number>;
+  por_tipo: { tipo: string; rotulo: string; total: number; decididas: number; aceitas: number; rejeitadas: number; expiradas: number; pendentes: number }[];
+  motivos_rejeicao: { motivo: string; vezes: number }[];
+  comparacao: {
+    os: { aceitas: { conferidas: number; falharam?: number; taxa_falha: number | null }; rejeitadas: { conferidas: number; falharam?: number; taxa_falha: number | null } };
+    reforco: { aceitas: { conferidas: number; real_sobre_previsto: number | null }; rejeitadas: { conferidas: number; real_sobre_previsto: number | null } };
+    aviso: string;
+  };
+  decisoes: { id: number; tipo: string; rotulo_tipo: string; texto: string; estado: string; decidido_por: string | null;
+              decidido_em: string | null; motivo: string | null; previsao_id: number | null;
+              execucao: Record<string, unknown> | null; retorno: { texto: string; [k: string]: unknown } | null }[];
+}
+
+/** Padrões descobertos (Q2) */
+export interface PadraoDescoberto {
+  padrao: number; titulo: string; modulo: string; metodo: string; descoberto: string; plantado: string;
+  efeito: number | null; veredito: "encontrado" | "fraco" | "nao_encontrado" | "sem_dados"; detalhe?: string;
+}
+export interface PadroesDescobertos {
+  gerado_em: string; padroes: PadraoDescoberto[]; resumo: Record<string, number>; aviso: string;
+  curvas: Record<string, Record<string, number>[]>;
+}

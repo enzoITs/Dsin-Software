@@ -101,3 +101,25 @@ describe("Alerta preventivo na central", () => {
     expect(antecedencia("2026-10-30T17:00:00Z", "2026-10-30T19:00:00Z", agora)).toBe("em andamento");
   });
 });
+
+describe("Cenário e se", () => {
+  it("mostra o que muda, por região, e o risco não coberto", async () => {
+    const { Resultado } = await import("../pages/Cenarios");
+    const r = {
+      origem: "2026-10-30T21:00:00Z", parametros: {}, aplicado: {}, segundos: 4.2,
+      frases: ["Ocorrências previstas nas próximas 72 h: 1.229 → 1.248 (+1,5%)"],
+      regioes: [{ regiao: "Centro", ocorrencias_base: 380, ocorrencias_cenario: 396, diferenca_pct: 4.2, indice_medio_base: 28,
+                  indice_medio_cenario: 35, indice_max_base: 57, indice_max_cenario: 57, nivel_max_base: "ALTO", nivel_max_cenario: "ALTO",
+                  periodos_alto_base: 1, periodos_alto_cenario: 2 }],
+      periodos: [{ inicio: "2026-10-30T21:00:00Z", fim: "2026-10-31T03:00:00Z", rotulo: "Sexta (30/10), 18 h às 24 h",
+                   regioes: [{ regiao: "Centro", indice_base: 57, nivel_base: "ALTO", indice_cenario: 77, nivel_cenario: "MUITO_ALTO" }] }],
+      equipes: { base: { nao_coberto_escala: 5366, nao_coberto_otimizado: 3745, recomendacoes: [] },
+                 cenario: { nao_coberto_escala: 10507, nao_coberto_otimizado: 7911, recomendacoes: ["reforçar a região Centro"] } },
+    };
+    render(<Resultado r={r} />);
+    expect(screen.getByText(r.frases[0])).toBeTruthy();
+    expect(screen.getByText("Centro", { selector: "td" })).toBeTruthy();
+    expect(screen.getByText("10.507")).toBeTruthy();
+    expect(screen.getByText(/Nada foi alterado no sistema/)).toBeTruthy();
+  });
+});

@@ -7,9 +7,9 @@ import { ApiError } from "../api/client";
 import { Botao, Carregando, Erro, Secao } from "../components/ui";
 import { usePerfil } from "../lib/perfil";
 import AvisoTreino from "../preditivo/AvisoTreino";
-import { useAcertometro, useModelos, useTreinar } from "../preditivo/api";
+import { useAcertometro, useModelos, usePadroes, useTreinar } from "../preditivo/api";
 import { num, pct } from "../preditivo/formato";
-import type { Acertometro, MetricasConferidas, ModeloAvaliado } from "../preditivo/tipos";
+import type { Acertometro, MetricasConferidas, ModeloAvaliado, PadroesDescobertos } from "../preditivo/tipos";
 
 const COR_MODELO = "#ff4f00";
 const COR_BASE = "#6b6b6b";
@@ -268,11 +268,82 @@ function AcertometroP1({ a }: { a: Acertometro["P1"] }) {
   );
 }
 
+const VEREDITO = {
+  encontrado: { r: "Encontrado", cor: "#1f9d55" }, fraco: { r: "Sinal fraco", cor: "#d99a00" },
+  nao_encontrado: { r: "Não encontrado", cor: "#d62828" }, sem_dados: { r: "Sem dados", cor: "#9a9aa0" },
+} as const;
+
+function Curva({ titulo, dados, x, series, fmtX, fmtY }: {
+  titulo: string; dados: Record<string, number>[]; x: string; series: [string, string, string, boolean?][];
+  fmtX: (v: number) => string; fmtY: (v: number) => string;
+}) {
+  return (
+    <div>
+      <h4 className="mb-1 text-[11px] font-bold uppercase tracking-[0.06em]">{titulo}</h4>
+      <div className="h-[170px]">
+        <ResponsiveContainer>
+          <LineChart data={dados} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
+            <CartesianGrid stroke="#eee" vertical={false} />
+            <XAxis dataKey={x} fontSize={11} tickFormatter={fmtX} />
+            <YAxis fontSize={11} tickFormatter={fmtY} domain={[0, "auto"]} />
+            <Tooltip formatter={(v: number) => fmtY(v)} labelFormatter={(l) => fmtX(Number(l))} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            {series.map(([k, nome, cor, trac]) => (
+              <Line key={k} dataKey={k} name={nome} stroke={cor} strokeWidth={2} strokeDasharray={trac ? "4 3" : undefined} dot={false} isAnimationActive={false} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function Padroes({ d }: { d: PadroesDescobertos }) {
+  const c = d.curvas;
+  return (
+    <div className="space-y-4">
+      <p className="border border-linha bg-neutro px-3 py-2 text-[12px]">
+        {d.aviso} Resultado: <b>{d.resumo.encontrado ?? 0} encontrados</b>, {d.resumo.fraco ?? 0} com sinal fraco, {d.resumo.nao_encontrado ?? 0} não encontrados.
+      </p>
+      <ul className="grid gap-3 lg:grid-cols-2">
+        {d.padroes.map((p) => (
+          <li key={p.padrao} className="border border-linha p-3 text-[13px]">
+            <div className="flex items-start justify-between gap-2">
+              <b>{p.padrao}. {p.titulo}</b>
+              <span className="shrink-0 px-2 py-[1px] text-[11px] font-bold uppercase tracking-[0.04em] text-white" style={{ background: VEREDITO[p.veredito].cor }}>
+                {VEREDITO[p.veredito].r}
+              </span>
+            </div>
+            <p className="mt-1"><span className="text-cinza">O que o sistema achou:</span> {p.descoberto}.{p.detalhe ? ` ${p.detalhe}.` : ""}</p>
+            <p className="mt-1"><span className="text-cinza">O que foi plantado:</span> {p.plantado}.</p>
+            <p className="mt-1 text-[11px] text-cinza">{p.modulo} · {p.metodo}</p>
+          </li>
+        ))}
+      </ul>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {c.idade_camera && <Curva titulo="P1: risco previsto de câmera por idade (dependência parcial)" dados={c.idade_camera} x="meses"
+          series={[["marca_fragil", "Marca do padrão 4", COR_MODELO], ["outras", "Outras marcas", COR_BASE, true]]}
+          fmtX={(v) => `${v} meses`} fmtY={(v) => pct(v, 1)} />}
+        {c.calor_radar && <Curva titulo="P1: risco previsto de radar pela temperatura da semana" dados={c.calor_radar} x="temperatura"
+          series={[["rodovia", "Rodovia (80 km/h ou mais)", COR_MODELO], ["urbano", "Urbano", COR_BASE, true]]}
+          fmtX={(v) => `${v} °C`} fmtY={(v) => pct(v, 1)} />}
+        {c.atraso && <Curva titulo="P1: risco previsto pelo atraso da preventiva" dados={c.atraso} x="dias"
+          series={[["risco", "Risco médio em 7 dias", COR_MODELO]]} fmtX={(v) => `${v} dias`} fmtY={(v) => pct(v, 1)} />}
+        {c.centro_por_hora && <Curva titulo="P2: Centro por hora, últimas 4 semanas (ocorrências por hora)" dados={c.centro_por_hora} x="hora"
+          series={[["previsto_sex_sab", "Previsto sex/sáb", COR_MODELO], ["real_sex_sab", "Real sex/sáb", COR_REAL],
+                   ["previsto_outros", "Previsto outros dias", COR_MODELO, true], ["real_outros", "Real outros dias", COR_BASE, true]]}
+          fmtX={(v) => `${v} h`} fmtY={(v) => num(v, 1)} />}
+      </div>
+    </div>
+  );
+}
+
 export default function ConfiancaModelos() {
   const modelos = useModelos();
   const [dias, setDias] = useState(7);
   const ac = useAcertometro(dias);
   const treinar = useTreinar();
+  const padroes = usePadroes();
   const { perfil } = usePerfil();
   const rodando = modelos.data?.treino.situacao === "rodando";
   return (
@@ -312,6 +383,16 @@ export default function ConfiancaModelos() {
           </Secao>
         </>
       )}
+
+      <Secao titulo="Padrões descobertos: o que os modelos aprenderam × o que foi plantado">
+        <p className="mb-3 text-[13px] text-cinza">
+          Depois do treino, o modelo pronto é interrogado: "e se este mesmo equipamento fosse mais velho, estivesse mais quente, com a
+          preventiva atrasada?"; "quantas ocorrências você prevê nas noites de sexta no Centro?". Só no fim a resposta é posta ao lado
+          da regra plantada no gerador.
+        </p>
+        {padroes.isLoading ? <Carregando texto="Interrogando os modelos (alguns segundos na primeira vez)…" />
+          : padroes.error ? <Erro erro={padroes.error} /> : <Padroes d={padroes.data!} />}
+      </Secao>
 
       <Secao
         titulo="Acertômetro: previsto × o que aconteceu"
