@@ -7,12 +7,12 @@ import math
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import func, select, text, update
+from sqlalchemy import text, update
 
 from app.db import SessionLocal
 from app.domain import derivados, limites
-from app.models import Agente, Alerta, Equipamento, PlanoManutencao
-from app.models.enums import EstadoAlerta, NivelAlerta, Situacao, TipoAlerta, TipoPlano
+from app.models import Alerta, Equipamento, PlanoManutencao
+from app.models.enums import TipoAlerta
 from app.services import central, motor, simulacao
 from tests.conftest import RADAR
 

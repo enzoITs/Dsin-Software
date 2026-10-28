@@ -3,12 +3,11 @@
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import select, text, update
+from sqlalchemy import text, update
 
 from app.db import SessionLocal, engine
 from app.domain import derivados
-from app.models import Alerta, Equipamento, HistoricoSituacao, OrdemServico, PlanoManutencao
-from app.models.enums import StatusOS, TipoAlerta, TipoPlano
+from app.models import Equipamento, PlanoManutencao
 from tests.conftest import RADAR
 
 

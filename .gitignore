@@ -10,3 +10,4 @@ simulador_parados.json
 backend/simulacao_estado.json
 *.tsbuildinfo
 backend/modelos/
+.ruff_cache/

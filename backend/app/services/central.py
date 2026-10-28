@@ -39,7 +39,6 @@ from app.models.enums import (
     TipoAlerta,
     TipoPlano,
 )
-from app.services import equipamentos as svc
 from app.services.equipamentos import Filtros, aplicar_filtros, area_wkt, posicao_atual
 
 S = Situacao
