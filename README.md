@@ -4,7 +4,7 @@
 - **Parte 2 — Central de operações:** uma tela única com mapa vivo, indicadores, alertas priorizados e situação de cada região, alimentada por um motor que interpreta cada sinal recebido. Responde à pergunta do enunciado: "se algo estiver acontecendo na cidade agora, PROMETHEUS conseguirá perceber?".
 - **Parte 3 — Cidade Preditiva:** previsões de falha de equipamentos, ocorrências e risco por região, reforço de equipes, anomalias e tendências, cada uma explicada, comparada com uma referência simples e transformada numa ação que o gestor aceita ou rejeita.
 
-Documentos de origem: `Atalaia — Parte 1 Inventário Inteligente da Cidade.pdf` e `Atalaia — Parte 2 Solução da Central de Operações.pdf`.
+O enunciado da Parte 3 está resumido em [docs/parte3/especificacao.md](docs/parte3/especificacao.md).
 
 ## Subir tudo com um comando
 

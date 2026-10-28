@@ -11,3 +11,6 @@ backend/simulacao_estado.json
 *.tsbuildinfo
 backend/modelos/
 .ruff_cache/
+
+# Documentos de origem (PDF) ficam só na máquina
+*.pdf
