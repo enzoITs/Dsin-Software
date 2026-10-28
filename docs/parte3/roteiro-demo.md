@@ -35,9 +35,9 @@ Cerca de 10 minutos. O mesmo roteiro está dentro do sistema: botão **Apresenta
 - Mostrar o resumo (momento mais crítico do dia), os reforços para decidir, a manutenção preventiva e o acertômetro de ontem. O botão "Markdown" baixa o texto para mandar à equipe.
 - Dizer: *"Às 6 h o gestor já sabe onde e quando o risco vai ser maior, o que precisa decidir e quanto o sistema acertou ontem."*
 
-### 2. Amanhã: sexta às 20 h, Centro em risco muito alto — `/amanha`
+### 2. Amanhã: sexta à noite, Centro em risco alto — `/amanha`
 
-- Arrastar o controle de horário até sexta, 20 h (ou apertar o play para ver as 72 h passarem). O Centro fica vermelho: show no Pacaembu somado à noite de sexta (padrão 1).
+- Arrastar o controle de horário até sexta, 18 h (ou apertar o play para ver as 72 h passarem). O Centro vira a região mais crítica, em risco alto: o show no Pacaembu (o efeito começa 2 h antes) somado à noite de sexta (padrões 1 e 3). No banco de 27/10, sexta às 18 h: índice 69,5 e cerca de 20 ocorrências na hora, 3× o normal.
 - Clicar na região: o Cartão de Previsão com os três títulos, **"O que estamos prevendo"**, **"Com base em quê"** e **"Como isso ajuda"**, os fatores em barras e o selo de qualidade contra a média histórica.
 - Mostrar a linha de contexto: feriados, eventos e clima, editáveis.
 - Dizer: *"O que estamos prevendo, com base em quê e como isso ajuda. Cada fator aparece com o peso que teve."*
@@ -45,7 +45,7 @@ Cerca de 10 minutos. O mesmo roteiro está dentro do sistema: botão **Apresenta
 ### 3. A recomendação: reforçar o Centro — `/previsao/equipes`
 
 - Risco não coberto com a escala atual × com a recomendada.
-- A recomendação em texto direto: reforçar o Centro com equipes vindas das regiões mais calmas, só no período do show. As origens dependem da escala do dia; o otimizador respeita mínimo por região, órgão e máximo de deslocamentos.
+- A recomendação em texto direto para sexta, 18 h às 21 h: reforçar o Centro com equipe vinda de uma região mais calma (no banco de 27/10, "+1 equipe de trânsito (CET), vinda da região Sul; 45 ocorrências previstas, 3,3× o normal"). As origens dependem da escala do dia; o otimizador respeita mínimo por região, órgão e máximo de deslocamentos.
 - **Aceitar**: o turno é movido só naquele período e a decisão fica registrada (quem, quando). Mostrar que **Rejeitar** pede motivo.
 - Dizer: *"O sistema recomenda; quem decide é a pessoa. Tudo fica registrado."*
 
@@ -100,7 +100,7 @@ Cerca de 10 minutos. O mesmo roteiro está dentro do sistema: botão **Apresenta
 | Sintoma | O que fazer |
 |---|---|
 | Telas de previsão dizem "treinando" | Esperar (cerca de 3 min no primeiro start) ou rodar `podman compose exec api python -m app.preditivo.treinar --todos` antes |
-| Sexta 20 h fora das 72 h | Cadastrar o show na data certa (passo 2 da preparação) e recalcular |
+| Sexta à noite fora das 72 h | Cadastrar o show na data certa (passo 2 da preparação) e recalcular |
 | Nenhum alerta preventivo na central | `curl -X POST localhost:8000/previsoes/recalcular` refaz P2, P3, P4 e os alertas |
 | Anomalia não aparece | `curl -X POST localhost:8000/anomalias/verificar`; as plantadas ficam visíveis por cerca de 28 dias depois da criação do banco |
 | Copiloto sem IA | É esperado sem chave: usar as perguntas prontas |
