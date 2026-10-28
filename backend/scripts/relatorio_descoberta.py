@@ -1,4 +1,4 @@
-"""Gera docs/parte3/relatorio-descoberta.md: o que os modelos aprenderam × os padrões plantados (Q2).
+"""Relatório em Markdown: o que os modelos aprenderam × os padrões plantados (Q2).
 
 Uso: python -m scripts.relatorio_descoberta [--saida caminho]
 """
@@ -45,12 +45,15 @@ def markdown(r: dict) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--saida", default=str(Path(__file__).resolve().parents[2] / "docs" / "parte3" / "relatorio-descoberta.md"))
+    ap.add_argument("--saida", default=None, help="arquivo .md; sem ele, imprime na tela")
     args = ap.parse_args()
     with SessionLocal() as db:
         r = descoberta.obter(db, refazer=True)
-    Path(args.saida).write_text(markdown(r), encoding="utf-8")
-    print(f"[descoberta] {r['resumo']} → {args.saida}")
+    if args.saida:
+        Path(args.saida).write_text(markdown(r), encoding="utf-8")
+        print(f"[descoberta] {r['resumo']} → {args.saida}")
+    else:
+        print(markdown(r))
 
 
 if __name__ == "__main__":

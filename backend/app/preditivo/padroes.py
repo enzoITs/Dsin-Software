@@ -1,8 +1,7 @@
 """Padrões plantados no histórico sintético (Parte 3).
 
 Este módulo é usado SÓ pelo gerador (histórico e modo contínuo). Os modelos de previsão nunca
-importam nada daqui: eles precisam redescobrir os padrões olhando os dados. A descrição para
-humanos está em docs/parte3/padroes-plantados.md.
+importam nada daqui: eles precisam redescobrir os padrões olhando os dados.
 
 Tudo aqui é função pura (NumPy), para o histórico e o modo contínuo usarem exatamente a mesma
 regra, e para os testes conferirem os padrões sem banco.

@@ -7,7 +7,7 @@ Uso:
 
 A vida dos equipamentos (falhas, furtos, manutenções) é gerada pelo seed da Parte 1, que usa
 app/preditivo/gerador_equipamentos.py. Para recomeçar tudo do zero, recrie o banco.
-Os padrões plantados estão descritos em docs/parte3/padroes-plantados.md.
+Os padrões plantados estão em app/preditivo/padroes.py.
 """
 
 import argparse

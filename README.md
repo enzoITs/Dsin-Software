@@ -4,8 +4,6 @@
 - **Parte 2 — Central de operações:** uma tela única com mapa vivo, indicadores, alertas priorizados e situação de cada região, alimentada por um motor que interpreta cada sinal recebido. Responde à pergunta do enunciado: "se algo estiver acontecendo na cidade agora, PROMETHEUS conseguirá perceber?".
 - **Parte 3 — Cidade Preditiva:** previsões de falha de equipamentos, ocorrências e risco por região, reforço de equipes, anomalias e tendências, cada uma explicada, comparada com uma referência simples e transformada numa ação que o gestor aceita ou rejeita.
 
-O enunciado da Parte 3 está resumido em [docs/parte3/especificacao.md](docs/parte3/especificacao.md).
-
 ## Subir tudo com um comando
 
 Requisitos: Docker com Compose (ou Podman com `podman-compose`).
@@ -67,8 +65,6 @@ A Central da Parte 2 vê o que está acontecendo agora; a Parte 3 prevê o que d
 4. O humano decide (Aceitar, Ajustar, Rejeitar com motivo; tudo registrado).
 5. Prevê lugares, períodos e equipamentos, nunca pessoas.
 
-O que cada modelo prevê, com que dados, como ajuda e quanto acerta: **[docs/parte3/previsoes.md](docs/parte3/previsoes.md)**.
-
 ### Os modelos
 
 | Módulo | O que prevê | Resultado contra a referência (backtest) |
@@ -106,17 +102,17 @@ Na central, os **alertas preventivos** (risco alto na região nas próximas 6 h,
 
 **Primeiro start:** se ainda não há modelo treinado, a API treina sozinha em segundo plano (cerca de 3 minutos) e as telas de previsão mostram o progresso. Depois, o agendador refaz P2, P3 e P4 de hora em hora (com os alertas preventivos, o acertômetro e o retorno das decisões), P1, P6, P7 e P8 às 5h10, P5 a cada 5 minutos e o briefing às 6 h.
 
-**Demonstração:** botão **Apresentar** no topo; o roteiro completo, com a preparação, está em [docs/parte3/roteiro-demo.md](docs/parte3/roteiro-demo.md).
+**Demonstração:** o botão **Apresentar**, no topo, abre o roteiro passo a passo (o que mostrar e o que dizer) e leva sozinho a cada tela. O grande show no Pacaembu cai na primeira sexta depois da criação do banco e a tela "Amanhã" mostra 72 h: crie o banco de 1 a 3 dias antes da apresentação.
 
 ### Dados sintéticos e padrões plantados
 
-**Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 174 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, descritos em [docs/parte3/padroes-plantados.md](docs/parte3/padroes-plantados.md). Os modelos não leem essa descrição: precisam redescobrir os padrões. Resultado: 9 encontrados e 1 não encontrado (calor nos radares de rodovia: o modelo vê o efeito diluído), em [docs/parte3/relatorio-descoberta.md](docs/parte3/relatorio-descoberta.md).
+**Os dados da Parte 3 são sintéticos.** O seed e o gerador criam 18 meses de história (falhas, furtos, manutenções, cerca de 174 mil ocorrências, eventos, clima, escala de agentes e séries de radares e câmeras) com padrões conhecidos, definidos em `backend/app/preditivo/padroes.py`. Os modelos não leem esse arquivo: precisam redescobrir os padrões. Resultado: 9 encontrados e 1 não encontrado (calor nos radares de rodovia: o modelo vê o efeito diluído), mostrados lado a lado na tela Confiança dos modelos.
 
 ```bash
 podman compose exec api python -m scripts.verificar_padroes        # confere cada padrão com consultas diretas
 podman compose exec api python -m scripts.gerar_historico --forcar # refaz o histórico da cidade (mesmos dados)
 podman compose exec api python -m app.preditivo.treinar --todos   # retreina tudo na hora (o mesmo que "Retreinar agora")
-podman compose exec api python -m scripts.relatorio_descoberta     # refaz docs/parte3/relatorio-descoberta.md
+podman compose exec api python -m scripts.relatorio_descoberta     # imprime o relatório padrões plantados × descobertos
 ```
 
 Mesma semente e mesma data de referência geram os mesmos dados. Depois da subida, o `simulador` continua a história no modo contínuo: a cada 5 minutos gera as ocorrências das horas que passaram, com os mesmos padrões e o clima gravado no banco (inclusive o editado pelo operador), e uma vez por hora aplica pela API falhas, furtos e consertos sorteados pelos mesmos padrões.
@@ -141,20 +137,6 @@ GET   /risco-previsto                     camada da central
 GET   /equipamentos/fim-de-vida
 GET   /ocorrencias | /eventos-cidade | /clima/previsao | /calendario | /escala   (POST/PUT para registrar e editar)
 ```
-
-### Documentos da Parte 3
-
-| Documento | Conteúdo |
-|---|---|
-| [previsoes.md](docs/parte3/previsoes.md) | O que cada modelo prevê, com que dados, como ajuda e quanto acerta |
-| [roteiro-demo.md](docs/parte3/roteiro-demo.md) | Roteiro da demonstração e preparação |
-| [padroes-plantados.md](docs/parte3/padroes-plantados.md) | Os padrões que o gerador planta e como conferir |
-| [relatorio-descoberta.md](docs/parte3/relatorio-descoberta.md) | O que os modelos encontraram × o que foi plantado |
-| [decisoes.md](docs/parte3/decisoes.md) | Decisões técnicas e divergências da especificação, fase a fase |
-| [etica-e-limites.md](docs/parte3/etica-e-limites.md) | O que o sistema não faz e por quê |
-| [00-reconhecimento.md](docs/parte3/00-reconhecimento.md) | Reconhecimento inicial e plano |
-| [uso-de-ia.md](docs/uso-de-ia.md) | Como a IA foi usada no desenvolvimento e dentro do sistema |
-| [fluxograma.html](docs/fluxograma.html) | Fluxograma do sistema e catálogo filtrável de todas as funções (abra no navegador) |
 
 ---
 
@@ -343,4 +325,3 @@ Estrutura:
 
 Testes: 226 no backend (73 da Parte 1, 39 da Parte 2, 114 da Parte 3) e 24 no frontend. Na Parte 3: migrações, reprodutibilidade do gerador, cada padrão plantado conferido por consulta, variáveis sem vazamento, baselines, P1 e P2 superando as referências (o teste falha se não superarem), contrato com campos não vazios, índice de risco em casos conhecidos, otimização de equipes respeitando as restrições e heurística de reserva válida, anomalias plantadas encontradas e série normal sem alarme, decisões (rejeitar exige motivo, aceitar executa), alertas preventivos que disparam e se resolvem, acertômetro, cenários (menos equipes aumenta o risco não coberto, evento aumenta ocorrências perto), retorno das decisões, padrões descobertos, copiloto com e sem IA, briefing, P6, P7, P8, expansão e extras.
 
-Como a IA foi usada no desenvolvimento e nos recursos do sistema: [docs/uso-de-ia.md](docs/uso-de-ia.md).

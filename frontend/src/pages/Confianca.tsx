@@ -400,7 +400,7 @@ export default function ConfiancaModelos() {
       {treinar.error instanceof ApiError && <p className="text-[13px] text-critico">{treinar.error.erro.mensagem}</p>}
       <AvisoTreino />
       <p className="border border-linha bg-neutro px-3 py-2 text-[12px]">
-        Os dados desta demonstração são sintéticos, gerados com padrões plantados (documentados em docs/parte3/padroes-plantados.md).
+        Os dados desta demonstração são sintéticos, gerados com padrões plantados (definidos em backend/app/preditivo/padroes.py, que os modelos não leem).
         Os números mostram que o método funciona; numa cidade real, os modelos seriam treinados e avaliados com os dados dela.
       </p>
 
