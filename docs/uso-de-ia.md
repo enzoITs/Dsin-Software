@@ -28,7 +28,6 @@ Problemas encontrados ao rodar, testar e olhar as telas, com a correção aplica
 | Ranking de qualidade com todos os órgãos iguais | Painel de qualidade | Seed passou a variar o cuidado de cadastro por órgão |
 | Build do frontend falhando com Tailwind 4.0.0 | `vite build` | Atualizado para Tailwind 4.1 |
 
-> A equipe deve completar esta seção com as revisões que fizer por conta própria.
 
 ### Decisões de arquitetura e o porquê
 

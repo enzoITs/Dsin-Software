@@ -51,7 +51,9 @@ Não há login. O seletor no topo escolhe o perfil, enviado à API em cabeçalho
 - **Gestor municipal** vê tudo, cria e edita tipos e ajusta os limites do motor.
 - **Operador do órgão** cadastra e edita só o próprio órgão; na central, age só em alertas do próprio órgão.
 - **Técnico** usa o modo campo do próprio órgão.
-- **PROMETHEUS** consome a API sem cabeçalhos (leitura total) e recebe eventos por webhook.
+- **PROMETHEUS** envia `X-Perfil: prometheus`: lê tudo, registra ocorrências e recebe eventos por webhook, mas não decide nem altera cadastros.
+
+Sem cabeçalho, a API assume o perfil de gestor, para a demonstração funcionar sem configuração. Como não há login, a API não deve ser exposta fora da rede da prefeitura sem autenticação na frente.
 
 ---
 
@@ -152,6 +154,7 @@ GET   /ocorrencias | /eventos-cidade | /clima/previsao | /calendario | /escala  
 | [etica-e-limites.md](docs/parte3/etica-e-limites.md) | O que o sistema não faz e por quê |
 | [00-reconhecimento.md](docs/parte3/00-reconhecimento.md) | Reconhecimento inicial e plano |
 | [uso-de-ia.md](docs/uso-de-ia.md) | Como a IA foi usada no desenvolvimento e dentro do sistema |
+| [fluxograma.html](docs/fluxograma.html) | Fluxograma do sistema e catálogo filtrável de todas as funções (abra no navegador) |
 
 ---
 
